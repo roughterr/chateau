@@ -10,7 +10,9 @@
     </style>
 
     <template>
-        <paper-input label="Type a message here" value="{{text}}" data-hotkey="ENTER"></paper-input>
+        <paper-textarea on-keypress="inputKeyPressed"
+                     placeholder="Type a message here"
+                     value="{{text}}"></paper-textarea>
         <paper-button id="sendButton" label="Test" on-tap="sendPressed">Send</paper-button>
     </template>
 </dom-module>
