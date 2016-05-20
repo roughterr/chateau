@@ -2,6 +2,7 @@
 library dartpr.lib.message_box;
 
 import 'dart:async';
+import 'dart:html';
 
 import 'package:polymer/polymer.dart';
 import 'package:web_components/web_components.dart';
@@ -17,9 +18,14 @@ class MessageBox extends PolymerElement {
   /// Subscription to a stream of messages that the user types.
   StreamSubscription _streamSubscription;
 
+  WebSocket ws;
+
   MessageBox.created() : super.created();
 
   void ready() {
-    _streamSubscription = messagestream.listen((s) => print("s: ${s}"));
+    //Opens WebSocket connection.
+    ws = new WebSocket('ws://localhost:8080/nauchat/echo');
+    _streamSubscription =
+        messagestream.listen((s) => ws.send("Message from chat: " + s));
   }
 }

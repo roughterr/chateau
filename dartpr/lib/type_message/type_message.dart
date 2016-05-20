@@ -39,7 +39,7 @@ class TypeMessage extends PolymerElement {
   @reflectable
   void sendPressed(event, [_]) {
     _messageStreamController.add(_textArea.value);
-    _textArea.value = null;
+    _textArea.value = '';
   }
 
   /// This method is called when the button "Send" is pressed.
@@ -51,7 +51,8 @@ class TypeMessage extends PolymerElement {
       // If a Ctrl and Enter buttons were pressed simultaneously.
       if (keyboardEvent.ctrlKey) {
         // Ctrl+Enter combination transforms into a next line symbol.
-        _textArea.value = _textArea.value + "\n";
+        _textArea.value =
+            (_textArea.value == null ? "" : _textArea.value.toString()) + "\n";
       } else {
         _lastKeyWasEnter = true;
       }
