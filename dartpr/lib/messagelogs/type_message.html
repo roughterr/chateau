@@ -1,0 +1,16 @@
+<dom-module id="type-message">
+    <style>
+        :host {
+            display: block;
+        }
+
+        #sendButton {
+            float: right;
+        }
+    </style>
+
+    <template>
+        <paper-input label="Type a message here" value="{{text}}" data-hotkey="ENTER"></paper-input>
+        <paper-button id="sendButton" label="Test" on-tap="sendPressed">Send</paper-button>
+    </template>
+</dom-module>
