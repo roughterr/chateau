@@ -1,6 +1,3 @@
-// Copyright (c) 2016, <your name>. All rights reserved. Use of this source code
-
-// is governed by a BSD-style license that can be found in the LICENSE file.
 @HtmlImport('type_message.html')
 library dartpr.lib.type_message;
 
@@ -13,6 +10,7 @@ import 'package:polymer_elements/paper_textarea.dart';
 
 /// Uses [PaperButton]
 /// Uses [PaperTextarea]
+/// This Polymer element will contain an input fiend and a button "Send".
 @PolymerRegister('type-message')
 class TypeMessage extends PolymerElement {
   @property
@@ -30,7 +28,7 @@ class TypeMessage extends PolymerElement {
   @reflectable
   void inputKeyPressed(CustomEventWrapper event, [_]) {
     final KeyboardEvent keyboardEvent = event.original as KeyboardEvent;
-    // If an Enter button was pressed.
+    // If a Ctrl and Enter buttons were pressed simultateously.
     if (keyboardEvent.ctrlKey &&
         (keyboardEvent.keyCode == 13 || keyboardEvent.keyCode == 10)) {
       sendPressed(null);
