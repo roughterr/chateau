@@ -1,0 +1,54 @@
+<html>
+<head>
+    <title>Login Page</title>
+    <style>
+        body {
+            font-family: Arial;
+        }
+    </style>
+</head>
+<body>
+<h3>Login with Username and Password</h3>
+<div id="errormessage"></div>
+<form name='f' action='/login.html' method='POST'>
+    <table>
+        <tr>
+            <td>Login:</td>
+            <td><input type='text' name='username' value=''></td>
+        </tr>
+        <tr>
+            <td>Password:</td>
+            <td><input type='password' name='password'/></td>
+        </tr>
+        <tr>
+            <td colspan='2'><input name="submit" type="submit" value="Login"/></td>
+        </tr>
+    </table>
+</form>
+</body>
+<script>
+    function checkParemeterExists(parameter) {
+        //Get Query String from url
+        fullQString = window.location.search.substring(1);
+        paramCount = 0;
+        queryStringComplete = "?";
+        if (fullQString.length > 0) {
+            //Split Query String into separate parameters
+            paramArray = fullQString.split("&");
+            //Loop through params, check if parameter exists.
+            for (i = 0; i < paramArray.length; i++) {
+                currentParameter = paramArray[i].split("=");
+                if (currentParameter[0] == parameter) //Parameter already exists in current url
+                {
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+    if (checkParemeterExists('error')) {
+        var div = document.getElementById('errormessage');
+        div.innerHTML = 'Incorrect login or password';
+    }
+</script>
+</html>
