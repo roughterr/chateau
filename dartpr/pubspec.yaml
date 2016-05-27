@@ -13,6 +13,7 @@ dependencies:
   polymer_elements: ^1.0.0-rc.8
   polymer: ^1.0.0-rc.15
   web_components: ^0.12.0
+  stomp: ^0.7.3
 
 transformers:
 - polymer:
