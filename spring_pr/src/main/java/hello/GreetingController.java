@@ -19,7 +19,7 @@ public class GreetingController {
         this.messagingTemplate = messagingTemplate;
     }
 
-    @MessageMapping("/hello")
+    @MessageMapping("/bzzz")
     @SendTo("/topic/greetings")
     public Greeting greeting(HelloMessage message, Principal principal) throws Exception {
         System.out.println("Got HelloMessage: " + message.toString() +
@@ -35,5 +35,4 @@ public class GreetingController {
         }
         return new Greeting("Hello, " + message.getName() + "!");
     }
-
 }
