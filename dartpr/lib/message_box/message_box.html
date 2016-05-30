@@ -1,5 +1,7 @@
+<link rel="import" href="../chateau_stomp/chateau_stomp_js.html">
 <dom-module id="message-box">
     <template>
         <type-message messagestream="{{messagestream}}"></type-message>
+        <chateau-stomp-js id="client" messagetosend="{{messagetosend}}"></chateau-stomp-js>
     </template>
 </dom-module>
