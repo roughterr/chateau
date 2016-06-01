@@ -1,0 +1,61 @@
+<dom-module id="chateau-stomp-js">
+    <script>
+        Polymer({
+            is: 'chateau-stomp-js',
+
+            properties: {
+                _stompClient: {
+                    type: Object
+                },
+                //The last message that the client sent to the server.
+                messagefromclient: {
+                    type: Object,
+                    observer: 'messagefromclientChanged'
+                },
+                //The last message that the server sent to the client.
+                messagefromserver: {
+                    type: Object,
+                    notify: true
+                }
+            },
+
+            ready: function () {
+                console.log("chateau-stomp-js is ready.");
+                this.connect(null, null);
+            },
+
+            connect: function (e, detail) {
+                console.log("connecting to stomp...");
+                var socket = new SockJS('/hello/');
+                this._stompClient = Stomp.over(socket);
+                var client = this._stompClient;
+                var aw = this;
+                this._stompClient.connect('ian', "ian", function (frame) {
+                    //setConnected(true);
+                    console.log('Connected: ' + frame);
+                    client.subscribe('/topic/greetings', function (greeting) {
+                        console.log('/topic/greetings got');
+                        console.log(JSON.parse(greeting.body).content);
+                    });
+                    client.subscribe('/user/topic/greetings', function (greeting) {
+                        console.log('/user/topic/greetings got');
+                        console.log(JSON.parse(greeting.body).content);
+                    });
+                    client.subscribe('/commonchat-outcoming', function (message) {
+                        console.log('/commonchat-outcoming got.');
+                        aw.messagefromserver = JSON.parse(message.body);
+                        console.log("client.subscribe('/commonchat-outcomi... competed.");
+                    });
+                });
+            },
+
+            // The function sends a message from the user to the server.
+            messagefromclientChanged: function (newValue) {
+                console.log("sending a message to the server: " + newValue);
+                this._stompClient.send("/app/commonchat-incoming", {}, JSON.stringify(newValue));
+            }
+        });
+    </script>
+    <script src="sockjs-0.3.4.js"></script>
+    <script src="stomp.js"></script>
+</dom-module>

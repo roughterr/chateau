@@ -1,0 +1,44 @@
+<dom-module id="chateau-message-history">
+    <template>
+        <style>
+            .message-history-container {
+                height: 500px;
+            }
+        </style>
+        <div id="message-history-container" class="message-history-container">
+            <template is="dom-repeat" items="{{messages}}">
+                <div>
+                    <span>{{item.text}}</span>
+                    <span>{{item.author}}</span>
+                </div>
+            </template>
+        </div>
+    </template>
+    <script>
+        Polymer({
+            is: 'chateau-message-history',
+
+            properties: {
+                //the last incoming message
+                newmessage: {
+                    type: Object,
+                    observer: 'newmessageChanged'
+                },
+                messages: {
+                    type: Array,
+                    value: []
+                }
+            },
+
+            ready: function () {
+                console.log("message-history-container is ready.");
+            },
+
+            // The function displays a new message.
+            newmessageChanged: function (newValue) {
+                console.log("newmessageChanged called. newValue.text=" + newValue.text);
+                this.messages.push(newValue);
+            }
+        });
+    </script>
+</dom-module>

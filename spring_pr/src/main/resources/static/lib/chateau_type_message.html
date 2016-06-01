@@ -1,0 +1,68 @@
+<dom-module id="chateau-type-message">
+    <style>
+        :host {
+            display: block;
+        }
+
+        #sendButton {
+            float: right;
+        }
+    </style>
+
+    <template>
+        <paper-textarea on-keypress="inputKeyPressed" on-input="inputInput"
+                        placeholder="Type a message here"></paper-textarea>
+        <paper-button id="sendButton" label="Test" on-tap="sendPressed">Send</paper-button>
+    </template>
+    <script>
+        Polymer({
+            is: 'chateau-type-message',
+
+            properties: {
+                messagetosend: {
+                    type: Object,
+                    notify: true
+                },
+                //An HTML element where a user types text.
+                _textArea: {
+                    type: Object
+                },
+                // This variable indicated that the last pressed key was Enter.
+                _lastKeyWasEnter: {
+                    type: Boolean,
+                    value: false
+                }
+            },
+            ready: function () {
+                this._textArea = this.querySelector("paper-textarea");
+            },
+            // It is called when the button "Send" is pressed.
+            sendPressed: function () {
+                console.log("sendPressed called.");
+                this.messagetosend = {"text": this._textArea.value};
+                this._textArea.value = '';
+            },
+            // It is called when a user types something in the input text area.
+            inputInput: function () {
+                console.log("inputInput called.");
+                if (this._lastKeyWasEnter) {
+                    this.sendPressed();
+                }
+            },
+            inputKeyPressed: function (keyboardEvent) {
+                console.log("inputKeyPressed called.");
+                this._lastKeyWasEnter = false;
+                if (keyboardEvent.keyCode == 13 || keyboardEvent.keyCode == 10) {
+                    // If a Ctrl and Enter buttons were pressed simultaneously.
+                    if (keyboardEvent.ctrlKey) {
+                        // Ctrl+Enter combination transforms into a next line symbol.
+                        this._textArea.value =
+                                (this._textArea.value == null ? "" : this._textArea.value.toString()) + "\n";
+                    } else {
+                        this._lastKeyWasEnter = true;
+                    }
+                }
+            }
+        });
+    </script>
+</dom-module>
