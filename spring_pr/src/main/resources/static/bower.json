@@ -1,0 +1,14 @@
+{
+  "name": "chateau",
+  "homepage": "https://github.com/roughterr/chateau",
+  "authors": [
+    "romanp <unknown@ksf>"
+  ],
+  "description": "chat",
+  "main": "",
+  "license": "EULA",
+  "dependencies": {
+    "iron-elements": "PolymerElements/iron-elements#^1.0.10",
+    "paper-elements": "PolymerElements/paper-elements#^1.0.7"
+  }
+}
