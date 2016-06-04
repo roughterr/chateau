@@ -9,6 +9,7 @@
   "license": "EULA",
   "dependencies": {
     "iron-elements": "PolymerElements/iron-elements#^1.0.10",
-    "paper-elements": "PolymerElements/paper-elements#^1.0.7"
+    "paper-elements": "PolymerElements/paper-elements#^1.0.7",
+    "polymer": "Polymer#^1.5.0"
   }
 }
