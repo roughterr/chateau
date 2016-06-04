@@ -7,12 +7,12 @@
                 _stompClient: {
                     type: Object
                 },
-                //The last message that the client sent to the server.
+                //The last messageFromServer that the client sent to the server.
                 messagefromclient: {
                     type: Object,
                     observer: 'messagefromclientChanged'
                 },
-                //The last message that the server sent to the client.
+                //The last messageFromServer that the server sent to the client.
                 messagefromserver: {
                     type: Object,
                     notify: true
@@ -41,17 +41,17 @@
                         console.log('/user/topic/greetings got');
                         console.log(JSON.parse(greeting.body).content);
                     });
-                    client.subscribe('/commonchat-outcoming', function (message) {
+                    client.subscribe('/commonchat-outcoming', function (messageFromServer) {
                         console.log('/commonchat-outcoming got.');
-                        aw.messagefromserver = JSON.parse(message.body);
+                        aw.messagefromserver = JSON.parse(messageFromServer.body);
                         console.log("client.subscribe('/commonchat-outcomi... competed.");
                     });
                 });
             },
 
-            // The function sends a message from the user to the server.
+            // The function sends a messageFromServer from the user to the server.
             messagefromclientChanged: function (newValue) {
-                console.log("sending a message to the server: " + newValue);
+                console.log("sending a messageFromServer to the server: " + newValue);
                 this._stompClient.send("/app/commonchat-incoming", {}, JSON.stringify(newValue));
             }
         });

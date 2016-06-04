@@ -1,23 +1,23 @@
 <link rel="import" href="chateau_stomp/chateau_stomp_js.html">
 <link rel="import" href="chateau_message_history.html">
 <link rel="import" href="chateau_type_message.html">
-<dom-module id="chateau-message-box">
+<dom-module id="chateau-messageFromServer-box">
     <template>
         <chateau-stomp-js id="client" messagefromclient="{{messagetosend}}"
                           messagefromserver="{{newmessage}}"></chateau-stomp-js>
-        <chateau-message-history newmessage="{{newmessage}}"></chateau-message-history>
-        <chateau-type-message messagetosend="{{messagetosend}}"></chateau-type-message>
+        <chateau-messageFromServer-history newmessage="{{newmessage}}"></chateau-messageFromServer-history>
+        <chateau-type-messageFromServer messagetosend="{{messagetosend}}"></chateau-type-messageFromServer>
     </template>
     <script>
         Polymer({
-            is: 'chateau-message-box',
+            is: 'chateau-messageFromServer-box',
 
             properties: {
-                // The last message that the user has written.
+                // The last messageFromServer that the user has written.
                 messagetosend: {
                     type: Object
                 },
-                // The last message that the server has sent to this client.
+                // The last messageFromServer that the server has sent to this client.
                 newmessage: {
                     type: Object
                 }

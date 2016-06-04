@@ -1,34 +1,47 @@
-<dom-module id="chateau-message-history">
+<dom-module id="chateau-messageFromServer-history">
     <template>
         <style>
-            .message-history-container {
+            .messageFromServer-history-container {
                 height: 500px;
             }
         </style>
-        <div id="messagehistorycontainer" class="message-history-container">
-        </div>
+        <table id="messagehistorycontainer">
+            <tr>
+                <td>aw</td>
+            </tr>
+            <!--<div id="messagehistorycontainer" class="messageFromServer-history-container">-->
+            <!--</div>-->
+        </table>
     </template>
     <script>
         Polymer({
-            is: 'chateau-message-history',
+            is: 'chateau-messageFromServer-history',
             properties: {
-                //the last incoming message
+                //the last incoming messageFromServer
                 newmessage: {
                     type: Object,
                     observer: 'newmessageChanged'
                 }
             },
             ready: function () {
-                console.log("message-history-container is ready.");
+                console.log("messageFromServer-history-container is ready.");
             },
-            // The function displays a new message.
+            // The function displays a new messageFromServer.
             newmessageChanged: function (newValue) {
-                var node = document.createElement("p");
-                {
-                    var texttextnode = document.createTextNode(newValue.text);
-                    node.appendChild(texttextnode);
-                }
-                this.$.messagehistorycontainer.appendChild(node);
+                var row = this.$.messagehistorycontainer.insertRow(0);
+                var cell1 = row.insertCell(0);
+                var cell2 = row.insertCell(1);
+                cell1.innerHTML = newValue.username + ":";
+                cell2.innerHTML = newValue.text;
+
+                var node = document.createTextNode("<tr><<td>123</td>/tr>");
+//                {
+//                    var texttextnode =
+//                            document.createTextNode("<td>" + newValue.text + "</td>");
+//                    console.log("texttextnode.username is " + newValue.username);
+//                    node.appendChild(texttextnode);
+//                }
+                //this.$.messagehistorycontainer.appendChild(node);
             }
         });
     </script>

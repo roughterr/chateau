@@ -1,0 +1,20 @@
+<dom-module id="chateau-contactslist">
+    <template>
+        <script>
+            Polymer({
+                is: 'chateau-contactslist',
+
+                properties: {
+                    //username of a user that the current user has selected to speak with.
+                    currentuser: {
+                        type: String,
+                        notify: true
+                    },
+                    //list of contacts that should be displayed to the current user.
+                    contactslist: {
+                        type: Array
+                    }
+                }
+            })
+        </script>
+</dom-module>

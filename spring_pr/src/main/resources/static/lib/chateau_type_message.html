@@ -1,4 +1,4 @@
-<dom-module id="chateau-type-message">
+<dom-module id="chateau-type-messageFromServer">
     <style>
         :host {
             display: block;
@@ -11,12 +11,12 @@
 
     <template>
         <paper-textarea on-keypress="inputKeyPressed" on-input="inputInput"
-                        placeholder="Type a message here"></paper-textarea>
+                        placeholder="Type a messageFromServer here"></paper-textarea>
         <paper-button id="sendButton" label="Test" on-tap="sendPressed">Send</paper-button>
     </template>
     <script>
         Polymer({
-            is: 'chateau-type-message',
+            is: 'chateau-type-messageFromServer',
 
             properties: {
                 messagetosend: {

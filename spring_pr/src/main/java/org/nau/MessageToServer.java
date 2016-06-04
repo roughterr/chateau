@@ -1,9 +1,9 @@
-package hello;
+package org.nau;
 
 /**
- * Message of a chat.
+ * Message that is being sent from a client to the server.
  */
-public class Message {
+public class MessageToServer {
     /**
      * Text of the message.
      */
