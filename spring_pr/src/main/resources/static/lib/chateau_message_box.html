@@ -2,11 +2,18 @@
 <link rel="import" href="chateau_message_history.html">
 <link rel="import" href="chateau_type_message.html">
 <dom-module id="chateau-message-box">
+    <style>
+        .chatcontainer {
+            width: 500px;
+        }
+    </style>
     <template>
         <chateau-stomp-js id="client" messagefromclient="{{messagetosend}}"
                           messagefromserver="{{newmessage}}"></chateau-stomp-js>
-        <chateau-message-history newmessage="{{newmessage}}"></chateau-message-history>
-        <chateau-type-message messagetosend="{{messagetosend}}"></chateau-type-message>
+        <div class="chatcontainer">
+            <chateau-message-history newmessage="{{newmessage}}"></chateau-message-history>
+            <chateau-type-message messagetosend="{{messagetosend}}"></chateau-type-message>
+        </div>
     </template>
     <script>
         Polymer({

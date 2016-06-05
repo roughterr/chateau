@@ -1,17 +1,13 @@
 <dom-module id="chateau-message-history">
+    <style>
+        .messagehistorycontainer {
+            overflow-y: auto;
+        }
+    </style>
     <template>
-        <style>
-            .messageFromServer-history-container {
-                height: 500px;
-            }
-        </style>
-        <table id="messagehistorycontainer">
-            <tr>
-                <td>aw</td>
-            </tr>
-            <!--<div id="messagehistorycontainer" class="messageFromServer-history-container">-->
-            <!--</div>-->
-        </table>
+        <div class="messagehistorycontainer">
+            <table id="messagehistorytable"></table>
+        </div>
     </template>
     <script>
         Polymer({
@@ -28,20 +24,12 @@
             },
             // The function displays a new messageFromServer.
             newmessageChanged: function (newValue) {
-                var row = this.$.messagehistorycontainer.insertRow(0);
+                var row = this.$.messagehistorytable.insertRow(0);
                 var cell1 = row.insertCell(0);
                 var cell2 = row.insertCell(1);
                 cell1.innerHTML = newValue.username + ":";
                 cell2.innerHTML = newValue.text;
-
-                var node = document.createTextNode("<tr><<td>123</td>/tr>");
-//                {
-//                    var texttextnode =
-//                            document.createTextNode("<td>" + newValue.text + "</td>");
-//                    console.log("texttextnode.username is " + newValue.username);
-//                    node.appendChild(texttextnode);
-//                }
-                //this.$.messagehistorycontainer.appendChild(node);
+                console.log("Added");
             }
         });
     </script>
