@@ -3,9 +3,21 @@
 <head>
     <meta charset="UTF-8">
     <title>Chat NAU</title>
-    <script type="text/javascript" src="bower_components/webcomponentsjs/webcomponents.js"></script>
+    <script type="text/javascript">
+        // This variable will have 'true' value when webcomponents.js does not fail to load.
+        //Usually the script fail to load then the current user is not logged in.
+        var webComponentsScriptLoaded = false;
+        // This function should be called by "onload" property of the body tag.
+        function bodyOnLoad() {
+            if (!webComponentsScriptLoaded) {
+                //Redirect to a page where the user can input his username/password.
+                window.location = "login.html";
+            }
+        }
+    </script>
+    <script type="text/javascript" src="bower_components/webcomponentsjs/webcomponents.js"
+            onload="webComponentsScriptLoaded=true;"></script>
     <link href="bower_components/polymer/polymer.html" rel="import">
-
     <!-- Toolbar element -->
     <link href="bower_components/paper-button/paper-button.html" rel="import">
     <link href="bower_components/paper-toolbar/paper-toolbar.html" rel="import">
@@ -13,7 +25,7 @@
     <!-- Chateau application -->
     <link href="lib/chateau_message_box.html" rel="import">
 </head>
-<body>
+<body onload="bodyOnLoad()">
 <chateau-messageFromServer-box></chateau-messageFromServer-box>
 </body>
 </html>
