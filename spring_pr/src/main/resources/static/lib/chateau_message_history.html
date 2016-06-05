@@ -1,33 +1,43 @@
 <dom-module id="chateau-message-history">
     <style>
-        .messagehistorycontainer {
-            overflow-y: auto;
+        #messageslist {
+            height: 100%;
+            width: 100%;
+            overflow-y: scroll;
+            overflow-wrap: break-word;
+            /* to disable dots*/
+            list-style-type: none;
         }
 
-        * {
-            box-sizing: border-box;
+        #messageslist > ::content .messagediv {
+            display: flex;
         }
 
-        table {
-            table-layout: fixed;
-            /*border-collapse: collapse;*/
-            /*width: 100%;*/
-            /*max-width: 100px;*/
+        #messageslist > ::content .messagediv > div {
+            margin: 4px;
+            padding: 4px;
         }
 
-        td {
-            width: 100px;
-            overflow: hidden;
+        #messageslist > ::content .usernamediv {
+            min-width: 80px;
+            text-align: right;
+        }
+
+        #messageslist > ::content .textdiv {
+            background-color: #FFE5B4;
+            min-width: 200px;
+            width: 100%;
+            text-align: left;
+        }
+
+        #messageslist > ::content .datediv {
+            min-width: 80px;
+            text-align: right;
+            vertical-align: middle;
         }
     </style>
     <template>
-        <div class="messagehistorycontainer">
-            <table id="messagehistorytable">
-                <col width="100" align="left">
-                <col width="300" align="left">
-                <col width="80" align="right">
-            </table>
-        </div>
+        <ul id="messageslist"></ul>
     </template>
     <script>
         Polymer({
@@ -44,14 +54,25 @@
             },
             // The function displays a new messageFromServer.
             newmessageChanged: function (newValue) {
-                var row = this.$.messagehistorytable.insertRow(0);
-                var cell1 = row.insertCell(0);
-                var cell2 = row.insertCell(1);
-                var cell3 = row.insertCell(2);
-                cell1.innerHTML = newValue.username + ":";
-                cell2.innerHTML = newValue.text;
-                cell3.innerHTML = newValue.date;
-                console.log("Added");
+                var ul = this.$.messageslist;
+                var li = document.createElement("li");
+                var usernameDiv = document.createElement("div");
+                usernameDiv.appendChild(document.createTextNode(newValue.username + ":"));
+                usernameDiv.className = 'usernamediv';
+                var textDiv = document.createElement("div");
+                textDiv.appendChild(document.createTextNode(newValue.text));
+                textDiv.className = 'textdiv';
+                var dateDiv = document.createElement("div");
+                dateDiv.appendChild(document.createTextNode(newValue.date));
+                dateDiv.className = 'datediv';
+                var messageDiv = document.createElement("div");
+                messageDiv.appendChild(usernameDiv);
+                messageDiv.appendChild(textDiv);
+                messageDiv.appendChild(dateDiv);
+                messageDiv.className = 'messagediv';
+                li.appendChild(messageDiv);
+                ul.appendChild(li);
+                this.$.messagesdiv.scrollTop = this.$.messagesdiv.scrollHeight;
             }
         });
     </script>
