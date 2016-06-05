@@ -8,11 +8,14 @@ public class MessageFromServer {
      * Text of the message.
      */
     private String text;
-
     /**
      * Author of the message.
      */
     private String username;
+    /**
+     * Date of the message.
+     */
+    private String date;
 
     public MessageFromServer() {
     }
@@ -31,5 +34,13 @@ public class MessageFromServer {
 
     public void setUsername(String username) {
         this.username = username;
+    }
+
+    public String getDate() {
+        return date;
+    }
+
+    public void setDate(String date) {
+        this.date = date;
     }
 }

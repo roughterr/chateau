@@ -8,6 +8,8 @@ import org.springframework.security.core.session.SessionRegistry;
 import org.springframework.stereotype.Controller;
 
 import java.security.Principal;
+import java.text.SimpleDateFormat;
+import java.util.Date;
 import java.util.List;
 
 /**
@@ -30,6 +32,7 @@ public class CommonChat {
         MessageFromServer messageFromServer = new MessageFromServer();
         messageFromServer.setUsername(principal.getName());
         messageFromServer.setText(messageToServer.getText());
+        messageFromServer.setDate(new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(new Date()));
         //Send the messageFromServer to all the users.
         //messagingTemplate.convertAndSend("/commonchat-outcoming", messageFromServer);
         return messageFromServer;
