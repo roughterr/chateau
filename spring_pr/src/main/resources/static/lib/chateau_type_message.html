@@ -38,19 +38,16 @@
             },
             // It is called when the button "Send" is pressed.
             sendPressed: function () {
-                console.log("sendPressed called.");
                 this.messagetosend = {"text": this._textArea.value};
                 this._textArea.value = '';
             },
             // It is called when a user types something in the input text area.
             inputInput: function () {
-                console.log("inputInput called.");
                 if (this._lastKeyWasEnter) {
                     this.sendPressed();
                 }
             },
             inputKeyPressed: function (keyboardEvent) {
-                console.log("inputKeyPressed called.");
                 this._lastKeyWasEnter = false;
                 if (keyboardEvent.keyCode == 13 || keyboardEvent.keyCode == 10) {
                     // If a Ctrl and Enter buttons were pressed simultaneously.
