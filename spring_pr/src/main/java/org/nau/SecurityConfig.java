@@ -33,12 +33,13 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
         http
                 .csrf().disable() // DISABLED CSRF protection to make it easier !
                 .authorizeRequests()
-                .antMatchers("/", "/login.html").permitAll()
-                .anyRequest().authenticated()
+                .antMatchers("/*.html").permitAll()
+                .anyRequest().permitAll()
                 .and()
                 .formLogin()
                 .loginPage("/login.html")
                 .permitAll()
+                .defaultSuccessUrl("/chateau.html")
                 .and()
                 .logout()
                 .permitAll()
