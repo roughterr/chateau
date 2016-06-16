@@ -12,7 +12,7 @@ public class WebSocketConfig extends AbstractWebSocketMessageBrokerConfigurer {
     @Override
     public void configureMessageBroker(MessageBrokerRegistry config) {
         //It simply allows destinations. No changins paths.
-        config.enableSimpleBroker("/topic", "/commonchat-outcoming");
+        config.enableSimpleBroker("/topic", "/message2group");
         //This address is used when a client wants to message to the server.
         //It's like the client sends to /app/hello but the server sees it as just /hello
         config.setApplicationDestinationPrefixes("/app");

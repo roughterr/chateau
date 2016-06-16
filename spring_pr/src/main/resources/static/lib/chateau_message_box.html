@@ -9,11 +9,12 @@
         }
     </style>
     <template>
-        <chateau-stomp-js id="client" messagefromclient="{{messagetosend}}"
-                          messagefromserver="{{newmessage}}"></chateau-stomp-js>
+        <chateau-stomp-js id="client" groupmessagefromserver="{{groupmessagefromserver}}"
+                          groupmessagefromclient="{{groupmessagefromclient}}"></chateau-stomp-js>
         <div class="chatcontainer">
-            <chateau-message-history newmessage="{{newmessage}}"></chateau-message-history>
-            <chateau-type-message messagetosend="{{messagetosend}}"></chateau-type-message>
+            <chateau-message-history newmessage="{{groupmessagefromserver}}"
+                                     newmymessage="{{newmymessage}}"></chateau-message-history>
+            <chateau-type-message newmessage="{{newmessage}}"></chateau-type-message>
         </div>
     </template>
     <script>
@@ -21,14 +22,24 @@
             is: 'chateau-message-box',
 
             properties: {
-                // The last messageFromServer that the user has written.
-                messagetosend: {
+                // The last group message that the user has written.
+                groupmessagefromclient: {
                     type: Object
                 },
-                // The last messageFromServer that the server has sent to this client.
                 newmessage: {
+                    type: String,
+                    observer: 'newmessageChanged'
+                },
+                groupmessagefromserver: {
+                    type: Object
+                },
+                newmymessage: {
                     type: Object
                 }
+            },
+            newmessageChanged: function (newValue) {
+                this.groupmessagefromclient = {"content": newValue, "groupId": "1"};
+                this.newmymessage = {"content": newValue, "date": "CURRENT_DATE"};
             }
         })
     </script>

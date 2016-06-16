@@ -7,15 +7,14 @@
                 _stompClient: {
                     type: Object
                 },
-                //The last messageFromServer that the client sent to the server.
-                messagefromclient: {
-                    type: Object,
-                    observer: 'messagefromclientChanged'
-                },
-                //The last messageFromServer that the server sent to the client.
-                messagefromserver: {
+                //The last group message that the server sent to the client.
+                groupmessagefromserver: {
                     type: Object,
                     notify: true
+                },
+                groupmessagefromclient: {
+                    type: Object,
+                    observer: 'groupmessagefromclientChanged'
                 }
             },
 
@@ -33,26 +32,18 @@
                 this._stompClient.connect('ian', "ian", function (frame) {
                     //setConnected(true);
                     console.log('Connected: ' + frame);
-                    client.subscribe('/topic/greetings', function (greeting) {
-                        console.log('/topic/greetings got');
-                        console.log(JSON.parse(greeting.body).content);
-                    });
-                    client.subscribe('/user/topic/greetings', function (greeting) {
-                        console.log('/user/topic/greetings got');
-                        console.log(JSON.parse(greeting.body).content);
-                    });
-                    client.subscribe('/commonchat-outcoming', function (messageFromServer) {
-                        console.log('/commonchat-outcoming got.');
-                        aw.messagefromserver = JSON.parse(messageFromServer.body);
-                        console.log("client.subscribe('/commonchat-outcomi... competed.");
+                    client.subscribe('/user/message2group', function (messageFromServer) {
+                        console.log('/user/message2group got.');
+                        aw.groupmessagefromserver = JSON.parse(messageFromServer.body);
                     });
                 });
             },
-
-            // The function sends a messageFromServer from the user to the server.
-            messagefromclientChanged: function (newValue) {
-                console.log("sending a messageFromServer to the server: " + newValue);
-                this._stompClient.send("/app/commonchat-incoming", {}, JSON.stringify(newValue));
+            /**
+             * Listen to changes of variable groupmessagefromclient. Sends a message to a group of users.
+             * @param newValue
+             */
+            groupmessagefromclientChanged: function (newValue) {
+                this._stompClient.send("/app/message2group", {}, JSON.stringify(newValue));
             }
         });
     </script>

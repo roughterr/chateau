@@ -1,3 +1,4 @@
+<link rel="import" href="chateau_cube_spinner.html">
 <dom-module id="chateau-message-history">
     <style>
         #messageslist {
@@ -24,10 +25,17 @@
         }
 
         #messageslist > ::content .textdiv {
-            background-color: #FFE5B4;
             min-width: 200px;
             width: 100%;
             text-align: left;
+        }
+
+        #messageslist > ::content .mymessagetextdiv {
+            background-color: #FFE5B4;
+        }
+
+        #messageslist > ::content .alienmessagetextdiv {
+            background-color: azure;
         }
 
         #messageslist > ::content .datediv {
@@ -47,6 +55,10 @@
                 newmessage: {
                     type: Object,
                     observer: 'newmessageChanged'
+                },
+                newmymessage: {
+                    type: Object,
+                    observer: 'newmymessageChanged'
                 }
             },
             ready: function () {
@@ -60,8 +72,8 @@
                 usernameDiv.appendChild(document.createTextNode(newValue.username + ":"));
                 usernameDiv.className = 'usernamediv';
                 var textDiv = document.createElement("div");
-                textDiv.appendChild(document.createTextNode(newValue.text));
-                textDiv.className = 'textdiv';
+                textDiv.appendChild(document.createTextNode(newValue.content));
+                textDiv.className = 'textdiv alienmessagetextdiv';
                 var dateDiv = document.createElement("div");
                 dateDiv.appendChild(document.createTextNode(newValue.date));
                 dateDiv.className = 'datediv';
@@ -73,7 +85,43 @@
                 li.appendChild(messageDiv);
                 ul.appendChild(li);
                 this.$.messagesdiv.scrollTop = this.$.messagesdiv.scrollHeight;
+            },
+            // The function displays a new messageFromServer.
+            newmymessageChanged: function (newValue) {
+                var ul = this.$.messageslist;
+                var li = document.createElement("li");
+                var usernameDiv = document.createElement("div");
+                usernameDiv.appendChild(document.createTextNode(""));
+                usernameDiv.className = 'usernamediv';
+                var textDiv = document.createElement("div");
+                textDiv.appendChild(document.createTextNode(newValue.content));
+                textDiv.className = 'textdiv mymessagetextdiv';
+                var chateauCureSpinner = document.createElement("chateau-cube-spinner");
+                var dateDiv = document.createElement("div");
+                //dateDiv.appendChild(document.createTextNode(newValue.date));
+                //the spinner must be removed after the message is sent.
+                dateDiv.appendChild(chateauCureSpinner);
+                dateDiv.className = 'datediv';
+                var messageDiv = document.createElement("div");
+                messageDiv.appendChild(textDiv);
+                messageDiv.appendChild(usernameDiv);
+                messageDiv.appendChild(dateDiv);
+                messageDiv.className = 'messagediv';
+                li.appendChild(messageDiv);
+                ul.appendChild(li);
+                this.$.messagesdiv.scrollTop = this.$.messagesdiv.scrollHeight;
             }
+//            _getSpinnerDiv: function () {
+//                var spinnerDiv = document.createElement("div");
+//                spinnerDiv.className = "spinner";
+//                var cube1 = document.createElement("div");
+//                cube1.className = "cube1";
+//                var cube2 = document.createElement("div");
+//                cube2.className = "cube2";
+//                spinnerDiv.appendChild(cube1);
+//                spinnerDiv.appendChild(cube2);
+//                return spinnerDiv;
+//            }
         });
     </script>
 </dom-module>

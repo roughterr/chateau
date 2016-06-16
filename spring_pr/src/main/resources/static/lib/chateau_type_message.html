@@ -19,8 +19,8 @@
             is: 'chateau-type-message',
 
             properties: {
-                messagetosend: {
-                    type: Object,
+                newmessage: {
+                    type: String,
                     notify: true
                 },
                 //An HTML element where a user types text.
@@ -38,7 +38,7 @@
             },
             // It is called when the button "Send" is pressed.
             sendPressed: function () {
-                this.messagetosend = {"text": this._textArea.value};
+                this.newmessage = this._textArea.value;
                 this._textArea.value = '';
             },
             // It is called when a user types something in the input text area.
