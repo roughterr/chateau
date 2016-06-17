@@ -84,7 +84,7 @@
                 messageDiv.className = 'messagediv';
                 li.appendChild(messageDiv);
                 ul.appendChild(li);
-                this.$.messagesdiv.scrollTop = this.$.messagesdiv.scrollHeight;
+                this.$.messageslist.scrollTop = this.$.messageslist.scrollHeight;
             },
             // The function displays a new messageFromServer.
             newmymessageChanged: function (newValue) {
@@ -109,19 +109,8 @@
                 messageDiv.className = 'messagediv';
                 li.appendChild(messageDiv);
                 ul.appendChild(li);
-                this.$.messagesdiv.scrollTop = this.$.messagesdiv.scrollHeight;
+                this.$.messageslist.scrollTop = this.$.messageslist.scrollHeight;
             }
-//            _getSpinnerDiv: function () {
-//                var spinnerDiv = document.createElement("div");
-//                spinnerDiv.className = "spinner";
-//                var cube1 = document.createElement("div");
-//                cube1.className = "cube1";
-//                var cube2 = document.createElement("div");
-//                cube2.className = "cube2";
-//                spinnerDiv.appendChild(cube1);
-//                spinnerDiv.appendChild(cube2);
-//                return spinnerDiv;
-//            }
         });
     </script>
 </dom-module>
