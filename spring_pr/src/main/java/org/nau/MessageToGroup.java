@@ -5,6 +5,10 @@ package org.nau;
  */
 public class MessageToGroup {
     /**
+     * message ID that the client generated.
+     */
+    private String messageClientId;
+    /**
      * ID of a group.
      */
     private String groupId;
@@ -13,6 +17,14 @@ public class MessageToGroup {
      * Message content.
      */
     private String content;
+
+    public String getMessageClientId() {
+        return messageClientId;
+    }
+
+    public void setMessageClientId(String messageClientId) {
+        this.messageClientId = messageClientId;
+    }
 
     public String getGroupId() {
         return groupId;
@@ -28,5 +40,14 @@ public class MessageToGroup {
 
     public void setContent(String content) {
         this.content = content;
+    }
+
+    @Override
+    public String toString() {
+        return "MessageToGroup{" +
+                "messageClientId='" + messageClientId + '\'' +
+                ", groupId='" + groupId + '\'' +
+                ", content='" + content + '\'' +
+                '}';
     }
 }
