@@ -1,4 +1,4 @@
-package org.nau;
+package org.nau.config;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.context.embedded.ServletListenerRegistrationBean;

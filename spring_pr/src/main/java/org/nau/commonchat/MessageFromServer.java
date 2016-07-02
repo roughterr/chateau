@@ -1,4 +1,4 @@
-package org.nau;
+package org.nau.commonchat;
 
 /**
  * Message that is being sent to a client.

@@ -1,4 +1,4 @@
-package org.nau;
+package org.nau.commonchat;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.messaging.handler.annotation.MessageMapping;

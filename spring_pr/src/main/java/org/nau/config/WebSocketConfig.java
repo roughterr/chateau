@@ -1,4 +1,4 @@
-package org.nau;
+package org.nau.config;
 
 import org.springframework.context.annotation.Configuration;
 import org.springframework.messaging.simp.config.MessageBrokerRegistry;

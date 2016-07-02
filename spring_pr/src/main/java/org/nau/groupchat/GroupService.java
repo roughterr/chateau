@@ -1,4 +1,4 @@
-package org.nau;
+package org.nau.groupchat;
 
 import java.util.ArrayList;
 import java.util.Arrays;

@@ -1,4 +1,4 @@
-package org.nau;
+package org.nau.groupchat;
 
 /**
  * Message sent to a group of users.
