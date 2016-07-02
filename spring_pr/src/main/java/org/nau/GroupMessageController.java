@@ -30,10 +30,9 @@ public class GroupMessageController {
      * @param messageToGroup message
      * @param principal      user identifier
      */
-    @MessageMapping("/message2group/{sessionId}")
-    public void messageToGroup(MessageToGroup messageToGroup, Principal principal, @DestinationVariable String sessionId) {
-        System.out.println("GroupMessageController. messageToGroup. sessionId is '" + sessionId +
-                "'. messageToGroup is '" + messageToGroup + "'.");
+    @MessageMapping("/message2group")
+    public void messageToGroup(MessageToGroup messageToGroup, Principal principal) {
+        System.out.println("GroupMessageController. messageToGroup. messageToGroup is '" + messageToGroup + "'.");
         //Sending a notification to the same session that the message has been delivered to the server.
 
         //Sending the message to all the user's sessions except the session from which he sent the message
@@ -49,7 +48,7 @@ public class GroupMessageController {
                 messageFromGroup.setContent(messageToGroup.getContent());
                 messageFromGroup.setDate(new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(new Date()));
                 messageFromGroup.setGroupId(messageToGroup.getGroupId());
-                messagingTemplate.convertAndSendToUser(userName, "/message2group/" + sessionId, messageFromGroup);
+                messagingTemplate.convertAndSendToUser(userName, "/message2group", messageFromGroup);
             }
         }
     }

@@ -41,10 +41,6 @@
                         console.log('/user/message2group got.');
                         aw.groupmessagefromserver = JSON.parse(messageFromServer.body);
                     });
-                    client.subscribe('/user/message2group/1', function (messageFromServer) {
-                        console.log('/user/message2group/1 got.');
-                        aw.groupmessagefromserver = JSON.parse(messageFromServer.body);
-                    });
                 });
             },
             /**
@@ -54,7 +50,7 @@
             groupmessagefromclientChanged: function (newValue) {
                 newValue.messageClientId = this._lastMessageClientId;
                 this._lastMessageClientId++;
-                this._stompClient.send("/app/message2group/1", {}, JSON.stringify(newValue));
+                this._stompClient.send("/app/message2group", {}, JSON.stringify(newValue));
             }
         });
     </script>
