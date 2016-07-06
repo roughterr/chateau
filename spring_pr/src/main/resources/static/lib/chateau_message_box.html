@@ -9,37 +9,24 @@
         }
     </style>
     <template>
-        <chateau-stomp-js id="client" groupmessagefromserver="{{groupmessagefromserver}}"
-                          groupmessagefromclient="{{groupmessagefromclient}}"></chateau-stomp-js>
+        <chateau-stomp-js got_message_function="{{drawnewmessagefunction}}"
+                          send_message_function="{{chateau_stomp_js_send_message_function}}"></chateau-stomp-js>
         <div class="chatcontainer">
-            <chateau-message-history newmessage="{{groupmessagefromserver}}"
-                                     newmymessage="{{newmymessage}}"></chateau-message-history>
-            <chateau-type-message newmessage="{{newmessage}}"></chateau-type-message>
+            <chateau-message-history drawnewmessagefunction="{{drawnewmessagefunction}}"
+                                     drawnewmymessagefunction="{{drawnewmymessagefunction}}"></chateau-message-history>
+            <chateau-type-message typenewmessagefunction="{{typenewmessagefunction}}"></chateau-type-message>
         </div>
     </template>
     <script>
         Polymer({
             is: 'chateau-message-box',
 
-            properties: {
-                // The last group message that the user has written.
-                groupmessagefromclient: {
-                    type: Object
-                },
-                newmessage: {
-                    type: String,
-                    observer: 'newmessageChanged'
-                },
-                groupmessagefromserver: {
-                    type: Object
-                },
-                newmymessage: {
-                    type: Object
+            ready: function () {
+                var element = this;
+                this.typenewmessagefunction = function (str) {
+                    element.drawnewmymessagefunction({"content": str, "date": "CURRENT_DATE"});
+                    element.chateau_stomp_js_send_message_function({"content": str, "groupId": "1"});
                 }
-            },
-            newmessageChanged: function (newValue) {
-                this.groupmessagefromclient = {"content": newValue, "groupId": "1"};
-                this.newmymessage = {"content": newValue, "date": "CURRENT_DATE"};
             }
         })
     </script>

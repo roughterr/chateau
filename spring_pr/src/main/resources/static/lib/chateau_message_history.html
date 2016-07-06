@@ -51,65 +51,65 @@
         Polymer({
             is: 'chateau-message-history',
             properties: {
-                //the last incoming messageFromServer
-                newmessage: {
+                //Displays a message of the person who uses the client.
+                drawnewmymessagefunction: {
                     type: Object,
-                    observer: 'newmessageChanged'
+                    notify: true
                 },
-                newmymessage: {
+                //Dispays messages of other people.
+                drawnewmessagefunction: {
                     type: Object,
-                    observer: 'newmymessageChanged'
+                    notify: true
                 }
             },
             ready: function () {
-                console.log("messageFromServer-history-container is ready.");
-            },
-            // The function displays a new messageFromServer.
-            newmessageChanged: function (newValue) {
-                var ul = this.$.messageslist;
-                var li = document.createElement("li");
-                var usernameDiv = document.createElement("div");
-                usernameDiv.appendChild(document.createTextNode(newValue.username + ":"));
-                usernameDiv.className = 'usernamediv';
-                var textDiv = document.createElement("div");
-                textDiv.appendChild(document.createTextNode(newValue.content));
-                textDiv.className = 'textdiv alienmessagetextdiv';
-                var dateDiv = document.createElement("div");
-                dateDiv.appendChild(document.createTextNode(newValue.date));
-                dateDiv.className = 'datediv';
-                var messageDiv = document.createElement("div");
-                messageDiv.appendChild(usernameDiv);
-                messageDiv.appendChild(textDiv);
-                messageDiv.appendChild(dateDiv);
-                messageDiv.className = 'messagediv';
-                li.appendChild(messageDiv);
-                ul.appendChild(li);
-                this.$.messageslist.scrollTop = this.$.messageslist.scrollHeight;
-            },
-            // The function displays a new messageFromServer.
-            newmymessageChanged: function (newValue) {
-                var ul = this.$.messageslist;
-                var li = document.createElement("li");
-                var usernameDiv = document.createElement("div");
-                usernameDiv.appendChild(document.createTextNode(""));
-                usernameDiv.className = 'usernamediv';
-                var textDiv = document.createElement("div");
-                textDiv.appendChild(document.createTextNode(newValue.content));
-                textDiv.className = 'textdiv mymessagetextdiv';
-                var chateauCureSpinner = document.createElement("chateau-cube-spinner");
-                var dateDiv = document.createElement("div");
-                //dateDiv.appendChild(document.createTextNode(newValue.date));
-                //the spinner must be removed after the message is sent.
-                dateDiv.appendChild(chateauCureSpinner);
-                dateDiv.className = 'datediv';
-                var messageDiv = document.createElement("div");
-                messageDiv.appendChild(textDiv);
-                messageDiv.appendChild(usernameDiv);
-                messageDiv.appendChild(dateDiv);
-                messageDiv.className = 'messagediv';
-                li.appendChild(messageDiv);
-                ul.appendChild(li);
-                this.$.messageslist.scrollTop = this.$.messageslist.scrollHeight;
+                console.log("chateau-message-history is ready.");
+                var element = this;
+                this.drawnewmymessagefunction = function (messagemap) {
+                    var ul = element.$.messageslist;
+                    var li = document.createElement("li");
+                    var usernameDiv = document.createElement("div");
+                    usernameDiv.appendChild(document.createTextNode(""));
+                    usernameDiv.className = 'usernamediv';
+                    var textDiv = document.createElement("div");
+                    textDiv.appendChild(document.createTextNode(messagemap.content));
+                    textDiv.className = 'textdiv mymessagetextdiv';
+                    var chateauCureSpinner = document.createElement("chateau-cube-spinner");
+                    var dateDiv = document.createElement("div");
+                    //dateDiv.appendChild(document.createTextNode(messagemap.date));
+                    //the spinner must be removed after the message is sent.
+                    dateDiv.appendChild(chateauCureSpinner);
+                    dateDiv.className = 'datediv';
+                    var messageDiv = document.createElement("div");
+                    messageDiv.appendChild(textDiv);
+                    messageDiv.appendChild(usernameDiv);
+                    messageDiv.appendChild(dateDiv);
+                    messageDiv.className = 'messagediv';
+                    li.appendChild(messageDiv);
+                    ul.appendChild(li);
+                    element.$.messageslist.scrollTop = element.$.messageslist.scrollHeight;
+                };
+                this.drawnewmessagefunction = function (messagemap) {
+                    var ul = element.$.messageslist;
+                    var li = document.createElement("li");
+                    var usernameDiv = document.createElement("div");
+                    usernameDiv.appendChild(document.createTextNode(messagemap.username + ":"));
+                    usernameDiv.className = 'usernamediv';
+                    var textDiv = document.createElement("div");
+                    textDiv.appendChild(document.createTextNode(messagemap.content));
+                    textDiv.className = 'textdiv alienmessagetextdiv';
+                    var dateDiv = document.createElement("div");
+                    dateDiv.appendChild(document.createTextNode(messagemap.date));
+                    dateDiv.className = 'datediv';
+                    var messageDiv = document.createElement("div");
+                    messageDiv.appendChild(usernameDiv);
+                    messageDiv.appendChild(textDiv);
+                    messageDiv.appendChild(dateDiv);
+                    messageDiv.className = 'messagediv';
+                    li.appendChild(messageDiv);
+                    ul.appendChild(li);
+                    element.$.messageslist.scrollTop = element.$.messageslist.scrollHeight;
+                };
             }
         });
     </script>

@@ -19,10 +19,6 @@
             is: 'chateau-type-message',
 
             properties: {
-                newmessage: {
-                    type: String,
-                    notify: true
-                },
                 //An HTML element where a user types text.
                 _textArea: {
                     type: Object
@@ -31,6 +27,10 @@
                 _lastKeyWasEnter: {
                     type: Boolean,
                     value: false
+                },
+                //A JavaScript function. The type message component calls this function after a user types a new message.
+                typenewmessagefunction: {
+                    type: Object
                 }
             },
             ready: function () {
@@ -38,7 +38,7 @@
             },
             // It is called when the button "Send" is pressed.
             sendPressed: function () {
-                this.newmessage = this._textArea.value;
+                this.typenewmessagefunction(this._textArea.value);
                 this._textArea.value = '';
             },
             // It is called when a user types something in the input text area.
