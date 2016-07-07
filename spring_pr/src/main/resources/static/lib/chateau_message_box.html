@@ -9,11 +9,11 @@
         }
     </style>
     <template>
-        <chateau-stomp-js got_message_function="{{drawnewmessagefunction}}"
+        <chateau-stomp-js got_message_function="{{draw_new_message_function}}"
                           send_message_function="{{chateau_stomp_js_send_message_function}}"></chateau-stomp-js>
         <div class="chatcontainer">
-            <chateau-message-history drawnewmessagefunction="{{drawnewmessagefunction}}"
-                                     drawnewmymessagefunction="{{drawnewmymessagefunction}}"></chateau-message-history>
+            <chateau-message-history draw_new_my_message_function="{{draw_new_my_message_function}}"
+                                     draw_new_message_function="{{draw_new_message_function}}"></chateau-message-history>
             <chateau-type-message typenewmessagefunction="{{typenewmessagefunction}}"></chateau-type-message>
         </div>
     </template>
@@ -24,8 +24,15 @@
             ready: function () {
                 var element = this;
                 this.typenewmessagefunction = function (str) {
-                    element.drawnewmymessagefunction({"content": str, "date": "CURRENT_DATE"});
-                    element.chateau_stomp_js_send_message_function({"content": str, "groupId": "1"});
+                    var messageObject = element.chateau_stomp_js_send_message_function({
+                        "content": str,
+                        "groupID": "1"
+                    });
+                    var messageControls = element.draw_new_my_message_function({
+                        "content": str,
+                        "date": "CURRENT_DATE"
+                    });
+                    messageObject.markAsRead = messageControls.markAsRead;
                 }
             }
         })

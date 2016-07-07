@@ -18,20 +18,28 @@
                 send_message_function: {
                     type: Object,
                     notify: true
+                },
+                //Map where a key is a message client ID.
+                _sent_messages: {
+                    type: Object
                 }
             },
 
             ready: function () {
                 console.log("chateau-stomp-js is ready.");
                 this.connect(null, null);
+                this._sent_messages = {};
                 this._lastMessageClientId = 1;
                 var element = this;
                 //Sends a message to a group of users.
                 this.send_message_function = function (messagemap) {
-                    messagemap.messageClientId = element._lastMessageClientId;
-                    element._lastMessageClientId++;
+                    messagemap.messageClientID = element._lastMessageClientId;
                     element._stompClient.send("/app/message2group", {}, JSON.stringify(messagemap));
-                }
+                    element._sent_messages[element._lastMessageClientId] = {};
+                    var toReturn = element._sent_messages[element._lastMessageClientId];
+                    element._lastMessageClientId++;
+                    return toReturn;
+                };
             },
 
             connect: function (e, detail) {
@@ -44,6 +52,11 @@
                     console.log('Connected: ' + frame);
                     element._stompClient.subscribe('/user/message2group', function (messageFromServer) {
                         console.log('/user/message2group got.');
+                        var response = JSON.parse(messageFromServer.body);
+                        element._sent_messages[response.messageClientID].markAsRead();
+                    });
+                    element._stompClient.subscribe('/user/message2group-news', function (messageFromServer) {
+                        console.log('/user/message2group-news got.');
                         element.got_message_function(JSON.parse(messageFromServer.body));
                     });
                 });

@@ -33,11 +33,15 @@ public class GroupMessageController {
     public void messageToGroup(MessageToGroup messageToGroup, Principal principal) {
         System.out.println("GroupMessageController. messageToGroup. messageToGroup is '" + messageToGroup + "'.");
         //Sending a notification to the same session that the message has been delivered to the server.
-
+        MessageReceivedResponse messageReceivedResponse = new MessageReceivedResponse();
+        messageReceivedResponse.setMessageClientID(messageToGroup.getMessageClientID());
+        messageReceivedResponse.setMessageServerID("17");
+        messageReceivedResponse.setDate(new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(new Date()));
+        messagingTemplate.convertAndSendToUser(principal.getName(), "/message2group", messageReceivedResponse);
         //Sending the message to all the user's sessions except the session from which he sent the message
 
         //Sending the message to the users to whom the message was sent
-        List<String> usersOfGroup = groupService.getUsersOfGroup(messageToGroup.getGroupId());
+        List<String> usersOfGroup = groupService.getUsersOfGroup(messageToGroup.getGroupID());
         for (String userName : usersOfGroup) {
             // We should not send a message to a user who sent the message.
             if (!principal.getName().equals(userName)) {
@@ -46,8 +50,8 @@ public class GroupMessageController {
                 messageFromGroup.setUsername(principal.getName());
                 messageFromGroup.setContent(messageToGroup.getContent());
                 messageFromGroup.setDate(new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(new Date()));
-                messageFromGroup.setGroupId(messageToGroup.getGroupId());
-                messagingTemplate.convertAndSendToUser(userName, "/message2group", messageFromGroup);
+                messageFromGroup.setGroupId(messageToGroup.getGroupID());
+                messagingTemplate.convertAndSendToUser(userName, "/message2group-news", messageFromGroup);
             }
         }
     }

@@ -52,12 +52,13 @@
             is: 'chateau-message-history',
             properties: {
                 //Displays a message of the person who uses the client.
-                drawnewmymessagefunction: {
+                // Returns a function that can be used to mark a message as it has been delivered.
+                draw_new_my_message_function: {
                     type: Object,
                     notify: true
                 },
-                //Dispays messages of other people.
-                drawnewmessagefunction: {
+                //Displays messages of other people.
+                draw_new_message_function: {
                     type: Object,
                     notify: true
                 }
@@ -65,7 +66,7 @@
             ready: function () {
                 console.log("chateau-message-history is ready.");
                 var element = this;
-                this.drawnewmymessagefunction = function (messagemap) {
+                this.draw_new_my_message_function = function (messagemap) {
                     var ul = element.$.messageslist;
                     var li = document.createElement("li");
                     var usernameDiv = document.createElement("div");
@@ -88,8 +89,13 @@
                     li.appendChild(messageDiv);
                     ul.appendChild(li);
                     element.$.messageslist.scrollTop = element.$.messageslist.scrollHeight;
+                    return {
+                        markAsRead: function () {
+                            dateDiv.remove(chateauCureSpinner);
+                        }
+                    };
                 };
-                this.drawnewmessagefunction = function (messagemap) {
+                this.draw_new_message_function = function (messagemap) {
                     var ul = element.$.messageslist;
                     var li = document.createElement("li");
                     var usernameDiv = document.createElement("div");

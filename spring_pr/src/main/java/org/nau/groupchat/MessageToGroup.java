@@ -7,31 +7,31 @@ public class MessageToGroup {
     /**
      * message ID that the client generated.
      */
-    private String messageClientId;
+    private String messageClientID;
     /**
      * ID of a group.
      */
-    private String groupId;
+    private String groupID;
 
     /**
      * Message content.
      */
     private String content;
 
-    public String getMessageClientId() {
-        return messageClientId;
+    public String getMessageClientID() {
+        return messageClientID;
     }
 
-    public void setMessageClientId(String messageClientId) {
-        this.messageClientId = messageClientId;
+    public void setMessageClientID(String messageClientID) {
+        this.messageClientID = messageClientID;
     }
 
-    public String getGroupId() {
-        return groupId;
+    public String getGroupID() {
+        return groupID;
     }
 
-    public void setGroupId(String groupId) {
-        this.groupId = groupId;
+    public void setGroupID(String groupID) {
+        this.groupID = groupID;
     }
 
     public String getContent() {
@@ -45,8 +45,8 @@ public class MessageToGroup {
     @Override
     public String toString() {
         return "MessageToGroup{" +
-                "messageClientId='" + messageClientId + '\'' +
-                ", groupId='" + groupId + '\'' +
+                "messageClientID='" + messageClientID + '\'' +
+                ", groupID='" + groupID + '\'' +
                 ", content='" + content + '\'' +
                 '}';
     }
