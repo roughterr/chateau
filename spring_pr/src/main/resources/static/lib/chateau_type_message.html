@@ -23,8 +23,8 @@
                 _textArea: {
                     type: Object
                 },
-                // This variable indicated that the last pressed key was Enter.
-                _lastKeyWasEnter: {
+                // This variable indicated that the operation was sending a message by Enter key.
+                _lastOperationWasSendByEnter: {
                     type: Boolean,
                     value: false
                 },
@@ -38,13 +38,16 @@
             },
             // It is called when the button "Send" is pressed.
             sendPressed: function () {
-                this.typenewmessagefunction(this._textArea.value);
+                if (this._textArea.value != null && this._textArea.value != '') {
+                    this.typenewmessagefunction(this._textArea.value);
+                }
                 this._textArea.value = '';
             },
             // It is called when a user types something in the input text area.
             inputInput: function () {
-                if (this._lastKeyWasEnter) {
-                    this.sendPressed();
+                if (this._lastOperationWasSendByEnter) {
+                    this._textArea.value = '';
+                    this._lastOperationWasSendByEnter = false;
                 }
             },
             inputKeyPressed: function (keyboardEvent) {
@@ -54,9 +57,10 @@
                     if (keyboardEvent.ctrlKey) {
                         // Ctrl+Enter combination transforms into a next line symbol.
                         this._textArea.value =
-                                (this._textArea.value == null ? "" : this._textArea.value.toString()) + "\n";
+                                (this._textArea.value == null ? "\n" : this._textArea.value.toString()) + "\n";
                     } else {
-                        this._lastKeyWasEnter = true;
+                        this._lastOperationWasSendByEnter = true;
+                        this.sendPressed();
                     }
                 }
             }
