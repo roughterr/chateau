@@ -1,4 +1,5 @@
 <link rel="import" href="chateau_cube_spinner.html">
+<link rel="import" href="chateau_loading_icon.html">
 <dom-module id="chateau-message-history">
     <style>
         #messageslist {
@@ -8,10 +9,13 @@
             overflow-wrap: break-word;
             /* to disable dots*/
             list-style-type: none;
+            display: flex;
+            flex-direction:column;
         }
 
         #messageslist > ::content .messagediv {
             display: flex;
+            justify-content: space-between;
         }
 
         #messageslist > ::content .messagediv > div {
@@ -28,6 +32,7 @@
             min-width: 200px;
             width: 100%;
             text-align: left;
+            word-break: break-all; /* For FF. Chrome works fine with or without it.*/
         }
 
         #messageslist > ::content .mymessagetextdiv {
@@ -40,6 +45,7 @@
 
         #messageslist > ::content .datediv {
             min-width: 80px;
+            max-width: 80px;
             text-align: right;
             vertical-align: middle;
         }
@@ -69,21 +75,17 @@
                 this.draw_new_my_message_function = function (messagemap) {
                     var ul = element.$.messageslist;
                     var li = document.createElement("li");
-                    var usernameDiv = document.createElement("div");
-                    usernameDiv.appendChild(document.createTextNode(""));
-                    usernameDiv.className = 'usernamediv';
                     var textDiv = document.createElement("div");
                     textDiv.appendChild(document.createTextNode(messagemap.content));
                     textDiv.className = 'textdiv mymessagetextdiv';
-                    var chateauCureSpinner = document.createElement("chateau-cube-spinner");
+                    var chateauLoadingIcon = document.createElement("chateau-loading-icon");
                     var dateDiv = document.createElement("div");
                     //dateDiv.appendChild(document.createTextNode(messagemap.date));
                     //the spinner must be removed after the message is sent.
-                    dateDiv.appendChild(chateauCureSpinner);
+                    dateDiv.appendChild(chateauLoadingIcon);
                     dateDiv.className = 'datediv';
                     var messageDiv = document.createElement("div");
                     messageDiv.appendChild(textDiv);
-                    messageDiv.appendChild(usernameDiv);
                     messageDiv.appendChild(dateDiv);
                     messageDiv.className = 'messagediv';
                     li.appendChild(messageDiv);
