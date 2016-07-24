@@ -10,7 +10,7 @@
             /* to disable dots*/
             list-style-type: none;
             display: flex;
-            flex-direction:column;
+            flex-direction: column;
         }
 
         #messageslist > ::content .messagediv {
@@ -76,7 +76,7 @@
                     var ul = element.$.messageslist;
                     var li = document.createElement("li");
                     var textDiv = document.createElement("div");
-                    textDiv.appendChild(document.createTextNode(messagemap.content));
+                    textDiv.appendChild(element.create_text_node(messagemap.content));
                     textDiv.className = 'textdiv mymessagetextdiv';
                     var chateauLoadingIcon = document.createElement("chateau-loading-icon");
                     var dateDiv = document.createElement("div");
@@ -104,7 +104,7 @@
                     usernameDiv.appendChild(document.createTextNode(messagemap.username + ":"));
                     usernameDiv.className = 'usernamediv';
                     var textDiv = document.createElement("div");
-                    textDiv.appendChild(document.createTextNode(messagemap.content));
+                    textDiv.appendChild(element.create_text_node(messagemap.content));
                     textDiv.className = 'textdiv alienmessagetextdiv';
                     var dateDiv = document.createElement("div");
                     dateDiv.appendChild(document.createTextNode(messagemap.date));
@@ -117,6 +117,14 @@
                     li.appendChild(messageDiv);
                     ul.appendChild(li);
                     element.$.messageslist.scrollTop = element.$.messageslist.scrollHeight;
+                };
+                /**
+                 * Creates a node that contains text to be displayed on the web interface.
+                 */
+                this.create_text_node = function (text) {
+                    var textNode = document.createTextNode(text);
+                    //TODO replace line breaks with <BR />
+                    return textNode;
                 };
             }
         });
