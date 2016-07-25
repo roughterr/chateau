@@ -44,22 +44,26 @@
 
             connect: function (e, detail) {
                 console.log("connecting to stomp...");
-                var socket = new SockJS('/hello/');
-                this._stompClient = Stomp.over(socket);
-                var element = this;
-                this._stompClient.connect('ian', "ian", function (frame) {
-                    //setConnected(true);
-                    console.log('Connected: ' + frame);
-                    element._stompClient.subscribe('/user/message2group', function (messageFromServer) {
-                        console.log('/user/message2group got.');
-                        var response = JSON.parse(messageFromServer.body);
-                        element._sent_messages[response.messageClientID].markAsRead();
-                    });
-                    element._stompClient.subscribe('/user/message2group-news', function (messageFromServer) {
-                        console.log('/user/message2group-news got.');
-                        element.got_message_function(JSON.parse(messageFromServer.body));
-                    });
-                });
+                var socket = new WebSocket('ws://localhost:8080/hello/');
+                socket.onopen = function() {
+                    console.log('opened.');
+                    socket.send("hello, server!");
+                };
+//                this._stompClient = Stomp.over(socket);
+//                var element = this;
+//                this._stompClient.connect('ian', "ian", function (frame) {
+//                    //setConnected(true);
+//                    console.log('Connected: ' + frame);
+//                    element._stompClient.subscribe('/user/message2group', function (messageFromServer) {
+//                        console.log('/user/message2group got.');
+//                        var response = JSON.parse(messageFromServer.body);
+//                        element._sent_messages[response.messageClientID].markAsRead();
+//                    });
+//                    element._stompClient.subscribe('/user/message2group-news', function (messageFromServer) {
+//                        console.log('/user/message2group-news got.');
+//                        element.got_message_function(JSON.parse(messageFromServer.body));
+//                    });
+//                });
             }
         });
     </script>
