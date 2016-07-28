@@ -36,7 +36,7 @@
                 this.send_message_function = function (messagemap) {
                     messagemap.messageClientID = element._lastMessageClientId;
 //                    element._stompClient.send("/app/message2group", {}, JSON.stringify(messagemap));
-                    element._socket.send('{ "destination": "group-chat", "content": "' + messagemap.content + '" }');
+                    element._socket.send('{ "destination": "group-chat", "content": "' + messagemap.content + '", "message-id": "0" }');
                     element._sent_messages[element._lastMessageClientId] = {};
                     var toReturn = element._sent_messages[element._lastMessageClientId];
                     element._lastMessageClientId++;

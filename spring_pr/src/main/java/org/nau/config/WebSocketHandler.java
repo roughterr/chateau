@@ -22,58 +22,54 @@ public class WebSocketHandler extends TextWebSocketHandler {
      */
     public static final String CHANNEL_PARAMETER_NAME = "channel";
     /**
-     * Contains last WebSocket messages from all users.
+     * Name of a parameter for a destination.
      */
-    private static LastMessages allLastMessages = new LastMessages();
+    public static final String DESTINATION_PARAMETER_NAME = "destination";
+    /**
+     * Name of a parameter for a message ID.
+     */
+    public static final String MESSAGEID_PARAMETER_NAME = "message-id";
 
     private static Map<String, Object> destinationBinding = new HashMap<>();
 
     /**
-     * @param userID         user ID
-     * @param sessionID      session ID
-     * @param destination    message destination. For example, /topic1
-     * @param channel        channel in terms of 1 destination
-     * @param messagePayload map with parameters of the message
-     * @return true - if the last message was different. false - if the last message was the same
+     * Map with indices of last messages sent to destinations.
+     * Map [ user_id, Map [ session_id, Map [ destination, DestinationMessages ] ] ]
      */
-    public static boolean updateLastMessage(String userID, String sessionID, String destination, int channel,
-                                            Map<String, Object> messagePayload) {
-        if (channel > CHANNELS_NUMBER_LIMIT) {
-            throw new RuntimeException("Channel overflow");
-        }
-        final LastUserMessages lastUserMessages;
-        if (allLastMessages.getLastMessages().containsKey(userID)) {
-            lastUserMessages = allLastMessages.getLastMessages().get(userID);
+    private static Map<String, Map<String, Map<String, DestinationMessages>>> lastMessageIndices = new HashMap<>();
+
+    /**
+     * @param userID      user ID
+     * @param sessionID   session ID
+     * @param destination message destination. For example, /topic1
+     * @param channel     channel in terms of 1 destination
+     * @param messageID   message ID
+     * @return -2 - error. -1 - sent successful. otherwise ID of the last message that was received.
+     */
+    public static int updateLastMessage(String userID, String sessionID, String destination, int channel, int messageID) {
+        final Map<String, Map<String, DestinationMessages>> userMap;
+        if (lastMessageIndices.containsKey(userID)) {
+            userMap = lastMessageIndices.get(userID);
         } else {
-            lastUserMessages = new LastUserMessages();
-            allLastMessages.getLastMessages().put(userID, lastUserMessages);
+            userMap = new HashMap<>();
+            lastMessageIndices.put(userID, userMap);
         }
-        final LastSessionMessages lastSessionMessages;
-        if (lastUserMessages.getLastUserMessages().containsKey(sessionID)) {
-            lastSessionMessages = lastUserMessages.getLastUserMessages().get(sessionID);
+        final Map<String, DestinationMessages> sessionMap;
+        if (userMap.containsKey(sessionID)) {
+            sessionMap = userMap.get(sessionID);
         } else {
-            lastSessionMessages = new LastSessionMessages();
-            lastUserMessages.getLastUserMessages().put(sessionID, lastSessionMessages);
+            sessionMap = new HashMap<>();
+            userMap.put(sessionID, sessionMap);
         }
-        final LastDestinationMessages lastDestinationMessages;
-        if (lastSessionMessages.getSessionLastMessages().containsKey(destination)) {
-            lastDestinationMessages = lastSessionMessages.getSessionLastMessages().get(destination);
+        final DestinationMessages destinationMessages;
+        if (sessionMap.containsKey(destination)) {
+            destinationMessages = sessionMap.get(destination);
         } else {
-            lastDestinationMessages = new LastDestinationMessages();
-            lastSessionMessages.getSessionLastMessages().put(destination, lastDestinationMessages);
+            destinationMessages = new DestinationMessages();
+            sessionMap.put(destination, destinationMessages);
         }
-        if (lastDestinationMessages.getLastDestinationMessages().containsKey(channel)) {
-            final Map<String, Object> existingLastMessage = lastDestinationMessages.getLastDestinationMessages().get(channel);
-            if (existingLastMessage.equals(messagePayload)) {
-                return false;
-            } else {
-                lastDestinationMessages.getLastDestinationMessages().put(channel, messagePayload);
-                return true;
-            }
-        } else {
-            lastDestinationMessages.getLastDestinationMessages().put(channel, messagePayload);
-            return true;
-        }
+        int burnResult = destinationMessages.burnMessage(channel, messageID);
+        return burnResult;
     }
 
     @Override
@@ -95,21 +91,27 @@ public class WebSocketHandler extends TextWebSocketHandler {
     protected void handleTextMessage(WebSocketSession session, TextMessage jsonTextMessage) throws Exception {
         System.out.println("afterConnectionEstablished received. message = '" + jsonTextMessage.getPayload() +
                 "', session.getPrincipal().getName()='" + session.getPrincipal().getName() + "'.");
-        JsonParser parser = new BasicJsonParser();
+        final JsonParser parser = new BasicJsonParser();
         try {
             Map<String, Object> parsed = parser.parseMap(jsonTextMessage.getPayload());
             System.out.println("parsed: " + parsed);
             //absence of a channel number means the zero channel.
             int channelNumber = parsed.containsKey(CHANNEL_PARAMETER_NAME) ?
                     Integer.parseInt(parsed.get(CHANNEL_PARAMETER_NAME).toString()) : 0;
-            parsed.remove(CHANNEL_PARAMETER_NAME);
-            String destination = "/test123";
             System.out.println("channelNumber is " + channelNumber);
-            boolean updateLastMessageResult = updateLastMessage(session.getPrincipal().getName(),
-                    session.getId(), destination, channelNumber, parsed);
+            parsed.remove(CHANNEL_PARAMETER_NAME);
+            int messageid = parsed.containsKey(MESSAGEID_PARAMETER_NAME) ?
+                    Integer.parseInt(parsed.get(MESSAGEID_PARAMETER_NAME).toString()) : 0;
+            System.out.println("messageid is " + channelNumber);
+            parsed.remove(MESSAGEID_PARAMETER_NAME);
+            final String destination = parsed.containsKey(DESTINATION_PARAMETER_NAME) ?
+                    parsed.get(DESTINATION_PARAMETER_NAME).toString() : "";
+            int updateLastMessageResult = updateLastMessage(session.getPrincipal().getName(),
+                    session.getId(), destination, channelNumber, messageid);
             System.out.println("updateLastMessageResult: " + updateLastMessageResult);
         } catch (Exception e) {
             System.out.println("Exception while parsing.");
+            e.printStackTrace();
         }
     }
 }
