@@ -87,7 +87,6 @@
                     if (channelObj.lastSentMessageID == null) {
                         channelObj.lastSentMessageID = -1;
                     }
-                    channelObj.lastSentMessageID++;
                     message["destination"] = destination;
                     message["message-id"] = channelObj.lastSentMessageID;
                     element._socket.send(JSON.stringify(message));

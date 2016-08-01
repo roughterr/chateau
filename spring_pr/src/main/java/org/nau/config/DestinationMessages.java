@@ -1,75 +1,57 @@
 package org.nau.config;
 
 /**
- * Contains indices of successfully delivered messages that belong to one destinations.
+ * Contains data about registered messages' IDs.
  */
 public class DestinationMessages {
     /**
-     * A channel for a message flow.
+     * ID of the last registered message of the first channel.
      */
-    private static class ChannelI {
-        /**
-         * ID of the last message successfully sent to the channel.
-         */
-        private int lastMessageID = -1;
+    private int firstChannelLastMessageID = -1;
+    /**
+     * ID of the last registered message of the second channel.
+     */
+    private int secondChannelLastMessageID = -1;
 
-        /**
-         * Returns ID of the last message successfully sent to the channel.
-         */
-        int getLastMessageID() {
-            return lastMessageID;
-        }
-
-        /**
-         * Sets ID of the last message successfully sent to the channel.
-         */
-        void setLastMessageID(int lastMessageID) {
-            this.lastMessageID = lastMessageID;
+    /**
+     * Cleans a channel message ID history.
+     *
+     * @param channelIndex channel index
+     */
+    public void cleanChannel(int channelIndex) {
+        if (channelIndex == 0) {
+            firstChannelLastMessageID = -1;
+        } else {
+            secondChannelLastMessageID = -1;
         }
     }
 
     /**
-     * ID of the last message of the first destination.
-     */
-    private ChannelI firstChannel = new ChannelI();
-    /**
-     * ID of the last message of the second destination.
-     */
-    private ChannelI secondChannel = new ChannelI();
-    /**
-     * ID of the last message of the third destination.
-     */
-    private ChannelI thirdChannel = new ChannelI();
-
-    /**
-     * Tells if the message is new or not. If it is, then makes a corresponding entry in the cache.
+     * Registers a new message.
      *
-     * @param channel   ID of a channel. Allowed values are: 0, 1, 2
-     * @param messageID IDs start from 0
-     * @return value -2 means an error. -1 - means the new message successfully pushed. otherwise ID of the last message.
+     * @param channelIndex channel index. Possible values are 0 and 1
+     * @param messageID    ID of the new message
+     * @return -1 means that the message has been successfully registered. any positive value means that the message
+     * has not been registered because of a message whose ID is the returned value. value -2 means an error.
      */
-    public int burnMessage(int channel, int messageID) {
-        final ChannelI channelObj;
-        final ChannelI cleanChannelObj;
-        if (channel == 0) {
-            channelObj = firstChannel;
-            cleanChannelObj = secondChannel;
-        } else if (channel == 1) {
-            channelObj = secondChannel;
-            cleanChannelObj = thirdChannel;
-        } else if (channel == 2) {
-            channelObj = thirdChannel;
-            cleanChannelObj = firstChannel;
-        } else {
+    public int registerMessage(int channelIndex, int messageID) {
+        System.out.println("registerMessage called. channelIndex=" + channelIndex + ", messageID=" + messageID);
+        if (messageID < 0) {
             return -2;
         }
-        if (cleanChannelObj.getLastMessageID() != -1)
-            cleanChannelObj.setLastMessageID(-1);
-        if (messageID == (channelObj.getLastMessageID() + 1)) {
-            //increment
-            channelObj.setLastMessageID(channelObj.getLastMessageID() + 1);
-            return -1;
+        if (channelIndex == 0) {
+            if (firstChannelLastMessageID + 1 == messageID) {
+                firstChannelLastMessageID++;
+                return -1;
+            }
+            return firstChannelLastMessageID;
+        } else if (channelIndex == 1) {
+            if (secondChannelLastMessageID + 1 == messageID) {
+                secondChannelLastMessageID++;
+                return -1;
+            }
+            return secondChannelLastMessageID;
         }
-        return channelObj.getLastMessageID();
+        return -1;
     }
 }
