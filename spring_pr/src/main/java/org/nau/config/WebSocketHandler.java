@@ -14,10 +14,6 @@ import java.util.Map;
 @Component
 public class WebSocketHandler extends TextWebSocketHandler {
     /**
-     * Max number of channels allowed.
-     */
-    public static final int CHANNELS_NUMBER_LIMIT = 2;
-    /**
      * Name of a parameter for a channel.
      */
     public static final String CHANNEL_PARAMETER_NAME = "channel";
