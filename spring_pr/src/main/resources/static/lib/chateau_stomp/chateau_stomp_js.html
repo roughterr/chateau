@@ -16,20 +16,21 @@
                 _socket: {
                     type: Object
                 },
-                // Map where key is a destination and value is number of the current channel (possible values are: 0, 1, 2)
-                _current_channels_map: {
-                    type: Object
-                }
+                /**
+                 * A map whose key is a destination and value is an object that has 4 fields:
+                 * currentChannel, firstChannel, secondChannel, thirdChannel.
+                 */
+                _destination_message_ids_map: {type: Object}
             },
 
             ready: function () {
                 console.log("chateau-stomp-js is ready.");
-                this._current_channels_map = {};
+                this._destination_message_ids_map = {};
                 this._connect(null, null);
                 var element = this;
                 //Sends a message to a group of users.
                 this.send_message_function = function (messagemap) {
-                    element.send_message_to_destination("group-chat", {});
+                    element.send_message_to_destination("group-chat", messagemap);
                     return null;
                 };
             },
@@ -66,25 +67,67 @@
 
             /**
              * Sends a message to a specific destination. The function does not know anything about message delivery
-             * strategy.
+             * strategy. After the message is sent, the [message] map contains the channel number and message number.
              * @param destination string with a destination
              * @param message map with a message
              */
             send_message_to_destination: function (destination, message) {
                 // Get the current channel if it is present in the map. Set the current channel to 0 if it is absent.
-                var currentChannel = this._current_channels_map[destination];
-                console.log("currentChannel: " + currentChannel);
+                var destinationObj = this._destination_message_ids_map[destination];
+                console.log("destinationObj: " + destinationObj);
                 var element = this;
-                if (currentChannel == null) {
-                    this._current_channels_map[destination] = 0;
+                if (destinationObj == null) {
+                    destinationObj = {};
+                    destinationObj.currentChannel = 0; //first channel
+                    this._destination_message_ids_map[destination] = destinationObj;
                     this.send_message_to_destination(destination, message);
                 } else {
-                    message["channel"] = currentChannel;
+                    message["channel"] = destinationObj.currentChannel;
+                    var channelObj = this._get_channel_by_index(destinationObj.currentChannel, destinationObj);
+                    if (channelObj.lastSentMessageID == null) {
+                        channelObj.lastSentMessageID = -1;
+                    }
+                    channelObj.lastSentMessageID++;
                     message["destination"] = destination;
-                    var messageID = 0; //TODO
-                    message["message-id"] = messageID;
+                    message["message-id"] = channelObj.lastSentMessageID;
                     element._socket.send(JSON.stringify(message));
-                    return messageID;
+                }
+            },
+            /**
+             * Returns an object that belong to a specific channel, from a more generic object.
+             * Creates a channel object if it is absent.
+             * @param channelIndex
+             * @param destinationObj
+             * @return {*}
+             */
+            _get_channel_by_index: function (channelIndex, destinationObj) {
+                console.log("_get_channel_by_index started.");
+                if (channelIndex == 0) {
+                    if (destinationObj.firstChannel == null) {
+                        var newObj = {};
+                        destinationObj.firstChannel = newObj;
+                        return newObj;
+                    } else {
+                        return destinationObj.firstChannel;
+                    }
+                } else if (channelIndex == 1) {
+                    if (destinationObj.secondChannel == null) {
+                        var newObj = {};
+                        destinationObj.secondChannel = newObj;
+                        return newObj;
+                    } else {
+                        return destinationObj.secondChannel;
+                    }
+                } else if (channelIndex == 2) {
+                    if (destinationObj.thirdChannel == null) {
+                        var newObj = {};
+                        destinationObj.thirdChannel = newObj;
+                        return newObj;
+                    } else {
+                        return destinationObj.thirdChannel;
+                    }
+                } else {
+                    return 1 / 0;
                 }
             }
         });
