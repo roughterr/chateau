@@ -16,16 +16,22 @@
                 _socket: {
                     type: Object
                 },
-                /**
-                 * A map whose key is a destination and value is an object that has 4 fields:
-                 * currentChannel, firstChannel, secondChannel, thirdChannel.
-                 */
-                _destination_message_ids_map: {type: Object}
+                /** Map, where the key is a destination and value is an object that has the following fields:
+                 * currentChannel - ID of the current channel. Possible values are: 0, 1;
+                 * firstChannelWaitingMap - a map of messages that are waiting to be confirmed by the server and belong
+                 *                          to the first channel;
+                 * secondChannelWaitingMap - a map of messages that are waiting to be confirmed by the server and belong
+                 *                           to the second channel;
+                 * firstChannelLastMessageID - ID of the last message that has been sent to the first channel;
+                 * secondChannelLastMessageID - ID of the last message that has been sent to the second channel.
+                 * */
+                _sent_messages: {
+                    type: Object
+                }
             },
 
             ready: function () {
                 console.log("chateau-stomp-js is ready.");
-                this._destination_message_ids_map = {};
                 this._connect(null, null);
                 var element = this;
                 //Sends a message to a group of users.
@@ -33,6 +39,7 @@
                     element.send_message_to_destination("group-chat", messagemap);
                     return null;
                 };
+                this._sent_messages = {};
             },
             /**
              * Connects to the server.
@@ -73,60 +80,36 @@
              */
             send_message_to_destination: function (destination, message) {
                 // Get the current channel if it is present in the map. Set the current channel to 0 if it is absent.
-                var destinationObj = this._destination_message_ids_map[destination];
+                var destinationObj = this._sent_messages[destination];
                 console.log("destinationObj: " + destinationObj);
                 var element = this;
                 if (destinationObj == null) {
                     destinationObj = {};
+                    destinationObj.firstChannelWaitingMap = {};
+                    destinationObj.secondChannelWaitingMap = {};
+                    destinationObj.firstChannelLastMessageID = -1;
+                    destinationObj.secondChannelLastMessageID = -1;
                     destinationObj.currentChannel = 0; //first channel
-                    this._destination_message_ids_map[destination] = destinationObj;
+                    this._sent_messages[destination] = destinationObj;
                     this.send_message_to_destination(destination, message);
                 } else {
                     message["channel"] = destinationObj.currentChannel;
-                    var channelObj = this._get_channel_by_index(destinationObj.currentChannel, destinationObj);
-                    if (channelObj.lastSentMessageID == null) {
-                        channelObj.lastSentMessageID = -1;
+                    var newMessageID;
+                    var waitingMap;
+                    if (destinationObj.currentChannel == 0) {
+                        destinationObj.firstChannelLastMessageID++;
+                        newMessageID = destinationObj.firstChannelLastMessageID;
+                        waitingMap = destinationObj.firstChannelWaitingMap;
+                    } else if (destinationObj.currentChannel == 1) {
+                        destinationObj.secondChannelLastMessageID++;
+                        newMessageID = destinationObj.secondChannelLastMessageID;
+                        waitingMap = destinationObj.secondChannelWaitingMap;
                     }
                     message["destination"] = destination;
-                    message["message-id"] = channelObj.lastSentMessageID;
+                    message["message-id"] = newMessageID;
+                    // Adding a message map to the regisrer only after all fields are filled.
+                    waitingMap[newMessageID] = message;
                     element._socket.send(JSON.stringify(message));
-                }
-            },
-            /**
-             * Returns an object that belong to a specific channel, from a more generic object.
-             * Creates a channel object if it is absent.
-             * @param channelIndex
-             * @param destinationObj
-             * @return {*}
-             */
-            _get_channel_by_index: function (channelIndex, destinationObj) {
-                console.log("_get_channel_by_index started.");
-                if (channelIndex == 0) {
-                    if (destinationObj.firstChannel == null) {
-                        var newObj = {};
-                        destinationObj.firstChannel = newObj;
-                        return newObj;
-                    } else {
-                        return destinationObj.firstChannel;
-                    }
-                } else if (channelIndex == 1) {
-                    if (destinationObj.secondChannel == null) {
-                        var newObj = {};
-                        destinationObj.secondChannel = newObj;
-                        return newObj;
-                    } else {
-                        return destinationObj.secondChannel;
-                    }
-                } else if (channelIndex == 2) {
-                    if (destinationObj.thirdChannel == null) {
-                        var newObj = {};
-                        destinationObj.thirdChannel = newObj;
-                        return newObj;
-                    } else {
-                        return destinationObj.thirdChannel;
-                    }
-                } else {
-                    return 1 / 0;
                 }
             }
         });
