@@ -29,6 +29,12 @@
                     type: Object
                 }
             },
+            /** Name of a destination parameter of JSON. */
+            DESTINATION_PARAM_NAME: "destination",
+            /** Name of a channel parameter of JSON. */
+            CHANNEL_PARAM_NAME: "channel",
+            /** Name of a message ID parameter of JSON. */
+            MESSAGEID_PARAM_NAME: "message-id",
 
             ready: function () {
                 console.log("chateau-stomp-js is ready.");
@@ -54,6 +60,12 @@
                 this._socket.onopen = function () {
                     console.log('opened.');
                     //element._socket.send("hello, server!");
+                };
+                this._socket.onmessage = function (message) {
+                    var messageMap = JSON.parse(message.data);
+                    console.log("messageMap['" + element.DESTINATION_PARAM_NAME + "']: " +
+                            messageMap[element.DESTINATION_PARAM_NAME]);
+
                 };
 //                this._stompClient = Stomp.over(socket);
 //                var element = this;
@@ -93,7 +105,7 @@
                     this._sent_messages[destination] = destinationObj;
                     this.send_message_to_destination(destination, message);
                 } else {
-                    message["channel"] = destinationObj.currentChannel;
+                    message[this.CHANNEL_PARAM_NAME] = destinationObj.currentChannel;
                     var newMessageID;
                     var waitingMap;
                     if (destinationObj.currentChannel == 0) {
@@ -105,9 +117,9 @@
                         newMessageID = destinationObj.secondChannelLastMessageID;
                         waitingMap = destinationObj.secondChannelWaitingMap;
                     }
-                    message["destination"] = destination;
-                    message["message-id"] = newMessageID;
-                    // Adding a message map to the regisrer only after all fields are filled.
+                    message[this.DESTINATION_PARAM_NAME] = destination;
+                    message[this.MESSAGEID_PARAM_NAME] = newMessageID;
+                    // Adding a message map to the register only after all fields are filled.
                     waitingMap[newMessageID] = message;
                     element._socket.send(JSON.stringify(message));
                 }
