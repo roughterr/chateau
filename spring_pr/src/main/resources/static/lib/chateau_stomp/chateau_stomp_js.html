@@ -18,23 +18,26 @@
                 },
                 /** Map, where the key is a destination and value is an object that has the following fields:
                  * currentChannel - ID of the current channel. Possible values are: 0, 1;
-                 * firstChannelWaitingMap - a map of messages that are waiting to be confirmed by the server and belong
-                 *                          to the first channel;
-                 * secondChannelWaitingMap - a map of messages that are waiting to be confirmed by the server and belong
-                 *                           to the second channel;
-                 * firstChannelLastMessageID - ID of the last message that has been sent to the first channel;
-                 * secondChannelLastMessageID - ID of the last message that has been sent to the second channel.
+                 * firstChannel - an object with data of the first channel
+                 * secondChannel - an object with data of the second channel
+                 * An object with data of a channel has the following fields:
+                 * waitingMap - a map of messages that are waiting to be confirmed by the server
+                 * lastMessageID - ID of the last message that has been sent to the server
                  * */
                 _sent_messages: {
                     type: Object
                 }
             },
-            /** Name of a destination parameter of JSON. */
+            /** Name of JSON parameter that is a destination. */
             DESTINATION_PARAM_NAME: "destination",
-            /** Name of a channel parameter of JSON. */
+            /** Name of JSON parameter that is a channel index. */
             CHANNEL_PARAM_NAME: "channel",
-            /** Name of a message ID parameter of JSON. */
-            MESSAGEID_PARAM_NAME: "message-id",
+            /** Name of JSON parameter that is a message ID. */
+            MESSAGEID_PARAM_NAME: "id",
+            /** Name of JSON parameter that is a frame name. */
+            FRAME_PARAM_NAME: "frame",
+            /** Name of a frame that is to confirm a message has been received. */
+            ACK_FRAME_NAME: "ACK",
 
             ready: function () {
                 console.log("chateau-stomp-js is ready.");
@@ -62,10 +65,37 @@
                     //element._socket.send("hello, server!");
                 };
                 this._socket.onmessage = function (message) {
+                    console.log("The client got the following message: " + message.data);
                     var messageMap = JSON.parse(message.data);
-                    console.log("messageMap['" + element.DESTINATION_PARAM_NAME + "']: " +
-                            messageMap[element.DESTINATION_PARAM_NAME]);
+                    // get destination from the message
+                    var destination = messageMap[element.DESTINATION_PARAM_NAME];
+                    if (destination == null || destination == '') {
+                        console.log("Server sent a message without a destionation.");
+                        return;
+                    }
+                    // get a channel from the message
+                    var channel = messageMap[element.CHANNEL_PARAM_NAME];
+                    if (channel == null || channel == '') {
+                        channel = 0;
+                    }
+                    // get a frame name
+                    var frame = messageMap[element.FRAME_PARAM_NAME];
+                    if (frame == null || frame == '') {
+                        console.log("Server sent a message without a frame name.");
+                        return;
+                    }
+                    if (frame == element.ACK_FRAME_NAME) {
+                        console.log('The client got an acknowledgement about the message: ' + message);
+                        // get a destination object
+                        var destinationObj = element._sent_messages[destination];
+                        if (destinationObj == null) {
+                            console.log('Server sent a message with unknown destination. The destination is ' + destination);
+                            return;
+                        }
 
+                    } else {
+                        console.log('unknown frame.');
+                    }
                 };
 //                this._stompClient = Stomp.over(socket);
 //                var element = this;
@@ -83,7 +113,6 @@
 //                    });
 //                });
             },
-
             /**
              * Sends a message to a specific destination. The function does not know anything about message delivery
              * strategy. After the message is sent, the [message] map contains the channel number and message number.
@@ -94,35 +123,35 @@
                 // Get the current channel if it is present in the map. Set the current channel to 0 if it is absent.
                 var destinationObj = this._sent_messages[destination];
                 console.log("destinationObj: " + destinationObj);
-                var element = this;
                 if (destinationObj == null) {
-                    destinationObj = {};
-                    destinationObj.firstChannelWaitingMap = {};
-                    destinationObj.secondChannelWaitingMap = {};
-                    destinationObj.firstChannelLastMessageID = -1;
-                    destinationObj.secondChannelLastMessageID = -1;
-                    destinationObj.currentChannel = 0; //first channel
+                    destinationObj = this._create_new_destination_object();
                     this._sent_messages[destination] = destinationObj;
-                    this.send_message_to_destination(destination, message);
-                } else {
-                    message[this.CHANNEL_PARAM_NAME] = destinationObj.currentChannel;
-                    var newMessageID;
-                    var waitingMap;
-                    if (destinationObj.currentChannel == 0) {
-                        destinationObj.firstChannelLastMessageID++;
-                        newMessageID = destinationObj.firstChannelLastMessageID;
-                        waitingMap = destinationObj.firstChannelWaitingMap;
-                    } else if (destinationObj.currentChannel == 1) {
-                        destinationObj.secondChannelLastMessageID++;
-                        newMessageID = destinationObj.secondChannelLastMessageID;
-                        waitingMap = destinationObj.secondChannelWaitingMap;
-                    }
-                    message[this.DESTINATION_PARAM_NAME] = destination;
-                    message[this.MESSAGEID_PARAM_NAME] = newMessageID;
-                    // Adding a message map to the register only after all fields are filled.
-                    waitingMap[newMessageID] = message;
-                    element._socket.send(JSON.stringify(message));
                 }
+                var element = this;
+                message[this.CHANNEL_PARAM_NAME] = destinationObj.currentChannel;
+                var channelObj = destinationObj.currentChannel == 0 ?
+                        destinationObj.firstChannel :
+                        destinationObj.secondChannel;
+                channelObj.lastMessageID++;
+                message[this.DESTINATION_PARAM_NAME] = destination;
+                message[this.MESSAGEID_PARAM_NAME] = channelObj.lastMessageID;
+                // Adding a message map to the register only after all fields are filled.
+                channelObj.waitingMap[channelObj.lastMessageID] = message;
+                element._socket.send(JSON.stringify(message));
+            },
+            /**
+             * Creates an instance of an object that has data about 1 channel of messages.
+             */
+            _create_new_destination_object: function () {
+                var destinationObj = {};
+                destinationObj.firstChannel = {};
+                destinationObj.secondChannel = {};
+                destinationObj.firstChannel.waitingMap = {};
+                destinationObj.firstChannel.lastMessageID = -1;
+                destinationObj.secondChannel.waitingMap = {};
+                destinationObj.secondChannel.lastMessageID = -1;
+                destinationObj.currentChannel = 0; //first channel
+                return destinationObj;
             }
         });
     </script>

@@ -1,5 +1,6 @@
 package org.nau.config;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.boot.json.BasicJsonParser;
 import org.springframework.boot.json.JsonParser;
 import org.springframework.stereotype.Component;
@@ -24,7 +25,20 @@ public class WebSocketHandler extends TextWebSocketHandler {
     /**
      * Name of a parameter for a message ID.
      */
-    public static final String MESSAGEID_PARAMETER_NAME = "message-id";
+    public static final String MESSAGEID_PARAMETER_NAME = "id";
+    /**
+     * Name of parameter that is a frame name.
+     */
+    public static final String FRAME_PARAM_NAME = "frame";
+    /**
+     * Name of a frame that is to confirm a message has been received.
+     */
+    public static final String ACK_FRAME_NAME = "ACK";
+    /**
+     * Name of a frame that is to confirm a message has not been consumed.
+     */
+    public static final String NACK_FRAME_NAME = "NACK";
+
 
     private static Map<String, Object> destinationBinding = new HashMap<>();
 
@@ -55,6 +69,7 @@ public class WebSocketHandler extends TextWebSocketHandler {
     /**
      * Returns a value from a map. The value is a map too. If the value is not present or null, the method creates a
      * new map and pushes it to the first map. In the last case, the new map is returned.
+     *
      * @param key key
      * @param map map
      * @param <A> type of the key of the value
@@ -111,11 +126,11 @@ public class WebSocketHandler extends TextWebSocketHandler {
             Map<String, Object> parsed = parser.parseMap(jsonTextMessage.getPayload());
             System.out.println("parsed: " + parsed);
             //absence of a channel number means the zero channel.
-            int channelNumber = parsed.containsKey(CHANNEL_PARAMETER_NAME) ?
+            final int channelNumber = parsed.containsKey(CHANNEL_PARAMETER_NAME) ?
                     Integer.parseInt(parsed.get(CHANNEL_PARAMETER_NAME).toString()) : 0;
             System.out.println("channelNumber is " + channelNumber);
             parsed.remove(CHANNEL_PARAMETER_NAME);
-            int messageid = parsed.containsKey(MESSAGEID_PARAMETER_NAME) ?
+            final int messageid = parsed.containsKey(MESSAGEID_PARAMETER_NAME) ?
                     Integer.parseInt(parsed.get(MESSAGEID_PARAMETER_NAME).toString()) : 0;
             System.out.println("messageid is " + channelNumber);
             parsed.remove(MESSAGEID_PARAMETER_NAME);
@@ -124,6 +139,20 @@ public class WebSocketHandler extends TextWebSocketHandler {
             int updateLastMessageResult = updateLastMessage(session.getPrincipal().getName(),
                     session.getId(), destination, channelNumber, messageid);
             System.out.println("updateLastMessageResult: " + updateLastMessageResult);
+            Map<String, Object> mapToSend = new HashMap<>();
+            mapToSend.put(DESTINATION_PARAMETER_NAME, destination);
+            if (channelNumber == 1) {
+                mapToSend.put(CHANNEL_PARAMETER_NAME, 1);
+            }
+            if (updateLastMessageResult == -1) {
+                mapToSend.put(FRAME_PARAM_NAME, ACK_FRAME_NAME);
+            } else {
+                mapToSend.put(FRAME_PARAM_NAME, NACK_FRAME_NAME);
+            }
+            mapToSend.put(MESSAGEID_PARAMETER_NAME, messageid);
+            final String json = new ObjectMapper().writeValueAsString(mapToSend);
+            session.sendMessage(new TextMessage(json));
+
         } catch (Exception e) {
             System.out.println("Exception while parsing.");
             e.printStackTrace();
