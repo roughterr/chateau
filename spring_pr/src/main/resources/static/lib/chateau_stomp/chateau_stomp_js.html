@@ -4,10 +4,6 @@
             is: 'chateau-stomp-js',
 
             properties: {
-                //A JavaScript function that is called when the client receives a new message from the server.
-                got_message_function: {
-                    type: Object
-                },
                 send_message_function: {
                     type: Object,
                     notify: true
@@ -45,8 +41,7 @@
                 var element = this;
                 //Sends a message to a group of users.
                 this.send_message_function = function (messagemap) {
-                    element.send_message_to_destination("group-chat", messagemap);
-                    return null;
+                    return element.send_message_to_destination("group-chat", messagemap);
                 };
                 this._sent_messages = {};
             },
@@ -61,8 +56,7 @@
                 this._socket = new WebSocket('ws://localhost:8080/hello/');
                 var element = this;
                 this._socket.onopen = function () {
-                    console.log('opened.');
-                    //element._socket.send("hello, server!");
+                    console.log('Opened a WebSocket connection.');
                 };
                 this._socket.onmessage = function (message) {
                     console.log("The client got the following message: " + message.data);
@@ -70,20 +64,29 @@
                     // get destination from the message
                     var destination = messageMap[element.DESTINATION_PARAM_NAME];
                     if (destination == null || destination == '') {
-                        console.log("Server sent a message without a destionation.");
+                        console.log("Server sent a message without a destination.");
                         return;
                     }
+                    // Cleaning the map.
+                    messageMap[element.DESTINATION_PARAM_NAME] = null;
                     // get a channel from the message
                     var channel = messageMap[element.CHANNEL_PARAM_NAME];
                     if (channel == null || channel == '') {
                         channel = 0;
                     }
+                    messageMap[element.CHANNEL_PARAM_NAME] = null;
+                    var messageID = messageMap[element.MESSAGEID_PARAM_NAME];
+                    if (messageID == null || messageID == '') {
+                        messageID = 0;
+                    }
+                    messageMap[element.MESSAGEID_PARAM_NAME] = null;
                     // get a frame name
                     var frame = messageMap[element.FRAME_PARAM_NAME];
                     if (frame == null || frame == '') {
                         console.log("Server sent a message without a frame name.");
                         return;
                     }
+                    messageMap[element.FRAME_PARAM_NAME] = null;
                     if (frame == element.ACK_FRAME_NAME) {
                         console.log('The client got an acknowledgement about the message: ' + message);
                         // get a destination object
@@ -92,9 +95,16 @@
                             console.log('Server sent a message with unknown destination. The destination is ' + destination);
                             return;
                         }
-
+                        // get the channel object
+                        var channelObj = channel == 0 ? destinationObj.firstChannel : destinationObj.secondChannel;
+                        var waitingMessageData = channelObj.waitingMap[messageID];
+                        if (waitingMessageData == null) {
+                            console.log('The client does not want to know about message number ' + messageID);
+                        } else {
+                            waitingMessageData.onAck(messageMap);
+                        }
                     } else {
-                        console.log('unknown frame.');
+                        console.log('Unsupported frame type.');
                     }
                 };
 //                this._stompClient = Stomp.over(socket);
@@ -136,8 +146,14 @@
                 message[this.DESTINATION_PARAM_NAME] = destination;
                 message[this.MESSAGEID_PARAM_NAME] = channelObj.lastMessageID;
                 // Adding a message map to the register only after all fields are filled.
-                channelObj.waitingMap[channelObj.lastMessageID] = message;
+                var waitingMessageData = {};
+                waitingMessageData.sentMessage = message;
+                waitingMessageData.onAck = function (messageMap) {
+                    console.log("Message ack received.");
+                };
+                channelObj.waitingMap[channelObj.lastMessageID] = waitingMessageData;
                 element._socket.send(JSON.stringify(message));
+                return waitingMessageData;
             },
             /**
              * Creates an instance of an object that has data about 1 channel of messages.

@@ -32,7 +32,9 @@
                         "content": str,
                         "date": "CURRENT_DATE"
                     });
-                    messageObject.markAsRead = messageControls.markAsRead;
+                    messageObject.onAck = function (messageMap) {
+                        messageControls.markAsRead();
+                    }
                 }
             }
         })
