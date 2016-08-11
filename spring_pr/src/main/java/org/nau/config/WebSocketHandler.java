@@ -38,6 +38,10 @@ public class WebSocketHandler extends TextWebSocketHandler {
      * Name of a frame that is to confirm a message has not been consumed.
      */
     public static final String NACK_FRAME_NAME = "NACK";
+    /**
+     * Name of a frame that commands to clean a channel.
+     */
+    public static final String CLEAN_FRAME_NAME = "CLEAN";
 
 
     private static Map<String, Object> destinationBinding = new HashMap<>();
@@ -128,33 +132,35 @@ public class WebSocketHandler extends TextWebSocketHandler {
             //absence of a channel number means the zero channel.
             final int channelNumber = parsed.containsKey(CHANNEL_PARAMETER_NAME) ?
                     Integer.parseInt(parsed.get(CHANNEL_PARAMETER_NAME).toString()) : 0;
-            System.out.println("channelNumber is " + channelNumber);
-            parsed.remove(CHANNEL_PARAMETER_NAME);
-            final int messageid = parsed.containsKey(MESSAGEID_PARAMETER_NAME) ?
-                    Integer.parseInt(parsed.get(MESSAGEID_PARAMETER_NAME).toString()) : 0;
-            System.out.println("messageid is " + channelNumber);
-            parsed.remove(MESSAGEID_PARAMETER_NAME);
             final String destination = parsed.containsKey(DESTINATION_PARAMETER_NAME) ?
                     parsed.get(DESTINATION_PARAMETER_NAME).toString() : "";
-            int updateLastMessageResult = updateLastMessage(session.getPrincipal().getName(),
-                    session.getId(), destination, channelNumber, messageid);
-            System.out.println("updateLastMessageResult: " + updateLastMessageResult);
-            Map<String, Object> mapToSend = new HashMap<>();
-            mapToSend.put(DESTINATION_PARAMETER_NAME, destination);
-            if (channelNumber == 1) {
-                mapToSend.put(CHANNEL_PARAMETER_NAME, 1);
-            }
-            if (updateLastMessageResult == -1) {
-                mapToSend.put(FRAME_PARAM_NAME, ACK_FRAME_NAME);
+            final String frame = parsed.containsKey(FRAME_PARAM_NAME) ?
+                    parsed.get(FRAME_PARAM_NAME).toString() : "";
+            if (frame.equals(CLEAN_FRAME_NAME)) {
+                System.out.println("Clean frame received.");
             } else {
-                mapToSend.put(FRAME_PARAM_NAME, NACK_FRAME_NAME);
-            }
-            mapToSend.put(MESSAGEID_PARAMETER_NAME, messageid);
-            final String json = new ObjectMapper().writeValueAsString(mapToSend);
-            session.sendMessage(new TextMessage(json));
+                parsed.remove(CHANNEL_PARAMETER_NAME);
+                final int messageid = parsed.containsKey(MESSAGEID_PARAMETER_NAME) ?
+                        Integer.parseInt(parsed.get(MESSAGEID_PARAMETER_NAME).toString()) : 0;
+                parsed.remove(MESSAGEID_PARAMETER_NAME);
 
+                int updateLastMessageResult = updateLastMessage(session.getPrincipal().getName(),
+                        session.getId(), destination, channelNumber, messageid);
+                Map<String, Object> mapToSend = new HashMap<>();
+                mapToSend.put(DESTINATION_PARAMETER_NAME, destination);
+                if (channelNumber == 1) {
+                    mapToSend.put(CHANNEL_PARAMETER_NAME, 1);
+                }
+                if (updateLastMessageResult == -1) {
+                    mapToSend.put(FRAME_PARAM_NAME, ACK_FRAME_NAME);
+                } else {
+                    mapToSend.put(FRAME_PARAM_NAME, NACK_FRAME_NAME);
+                }
+                mapToSend.put(MESSAGEID_PARAMETER_NAME, messageid);
+                final String json = new ObjectMapper().writeValueAsString(mapToSend);
+                session.sendMessage(new TextMessage(json));
+            }
         } catch (Exception e) {
-            System.out.println("Exception while parsing.");
             e.printStackTrace();
         }
     }
