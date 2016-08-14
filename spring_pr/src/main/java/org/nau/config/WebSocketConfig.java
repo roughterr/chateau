@@ -1,30 +1,23 @@
 package org.nau.config;
 
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.messaging.simp.config.MessageBrokerRegistry;
-import org.springframework.web.socket.config.annotation.AbstractWebSocketMessageBrokerConfigurer;
-import org.springframework.web.socket.config.annotation.EnableWebSocketMessageBroker;
-import org.springframework.web.socket.config.annotation.StompEndpointRegistry;
+import org.springframework.web.socket.config.annotation.*;
 
 @Configuration
-@EnableWebSocketMessageBroker
-public class WebSocketConfig extends AbstractWebSocketMessageBrokerConfigurer {
+@EnableWebSocket
+public class WebSocketConfig implements WebSocketConfigurer {
+    @Autowired
+    protected WebSocketHandler webSocketHandler;
+
     @Override
-    public void configureMessageBroker(MessageBrokerRegistry config) {
-        //It simply allows destinations. No changins paths.
-        config.enableSimpleBroker("/topic", "/message2group");
-        //This address is used when a client wants to message to the server.
-        //It's like the client sends to /app/hello but the server sees it as just /hello
-        config.setApplicationDestinationPrefixes("/app");
+    public void registerWebSocketHandlers(WebSocketHandlerRegistry registry) {
+        registry.addHandler(webSocketHandler, "/hello/");
     }
 
-    /**
-     * Sets an address that will be used when a client is connecting to the STOMP server.
-     *
-     * @param registry
-     */
-    @Override
-    public void registerStompEndpoints(StompEndpointRegistry registry) {
-        registry.addEndpoint("/hello").withSockJS();
+    @Bean
+    public WebSocketHandler systemWebSocketHandler(){
+        return new WebSocketHandler();
     }
 }
