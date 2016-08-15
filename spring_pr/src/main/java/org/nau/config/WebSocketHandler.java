@@ -42,7 +42,10 @@ public class WebSocketHandler extends TextWebSocketHandler {
      * Name of a frame that commands to clean a channel.
      */
     public static final String CLEAN_FRAME_NAME = "CLEAN";
-
+    /**
+     * Name of a frame that says that the channel has been cleaned.
+     */
+    public static final String CLEANED_FRAME_NAME = "CLEANED";
 
     private static Map<String, Object> destinationBinding = new HashMap<>();
 
@@ -53,6 +56,7 @@ public class WebSocketHandler extends TextWebSocketHandler {
     private static Map<String, Map<String, Map<String, DestinationMessages>>> lastMessageIndices = new HashMap<>();
 
     /**
+     * Returns an object that one can use to manage the channel's data.
      * Returns a value of an object of type Map<String, DestinationMessages>. If the object is not present, creates one.
      *
      * @param destination         key
@@ -94,16 +98,11 @@ public class WebSocketHandler extends TextWebSocketHandler {
      * @param userID      user ID
      * @param sessionID   session ID
      * @param destination message destination. For example, /topic1
-     * @param channel     channel in terms of 1 destination
-     * @param messageID   message ID
-     * @return -2 - error. -1 - sent successful. otherwise ID of the last message that was received.
      */
-    public static int updateLastMessage(String userID, String sessionID, String destination, int channel, int messageID) {
+    public static DestinationMessages getDestinationMessagesObj(String userID, String sessionID, String destination) {
         final Map<String, Map<String, DestinationMessages>> userMap = getMapFromMap(userID, lastMessageIndices);
         final Map<String, DestinationMessages> sessionMap = getMapFromMap(sessionID, userMap);
-        final DestinationMessages destinationMessages = getDestinationMessagesFromSession(destination, sessionMap);
-        int burnResult = destinationMessages.registerMessage(channel, messageID);
-        return burnResult;
+        return getDestinationMessagesFromSession(destination, sessionMap);
     }
 
     @Override
@@ -138,14 +137,22 @@ public class WebSocketHandler extends TextWebSocketHandler {
                     parsed.get(FRAME_PARAM_NAME).toString() : "";
             if (frame.equals(CLEAN_FRAME_NAME)) {
                 System.out.println("Clean frame received.");
+                DestinationMessages destinationMessages = getDestinationMessagesObj(session.getPrincipal().getName(),
+                        session.getId(), destination);
+                destinationMessages.cleanChannel(channelNumber);
+                Map<String, Object> mapToSend = new HashMap<>();
+                mapToSend.put(DESTINATION_PARAMETER_NAME, destination);
+                mapToSend.put(CHANNEL_PARAMETER_NAME, channelNumber);
+                mapToSend.put(FRAME_PARAM_NAME, CLEANED_FRAME_NAME);
+                final String json = new ObjectMapper().writeValueAsString(mapToSend);
+                session.sendMessage(new TextMessage(json));
             } else {
                 parsed.remove(CHANNEL_PARAMETER_NAME);
                 final int messageid = parsed.containsKey(MESSAGEID_PARAMETER_NAME) ?
                         Integer.parseInt(parsed.get(MESSAGEID_PARAMETER_NAME).toString()) : 0;
                 parsed.remove(MESSAGEID_PARAMETER_NAME);
-
-                int updateLastMessageResult = updateLastMessage(session.getPrincipal().getName(),
-                        session.getId(), destination, channelNumber, messageid);
+                int updateLastMessageResult = getDestinationMessagesObj(session.getPrincipal().getName(),
+                        session.getId(), destination).registerMessage(channelNumber, messageid);
                 Map<String, Object> mapToSend = new HashMap<>();
                 mapToSend.put(DESTINATION_PARAMETER_NAME, destination);
                 if (channelNumber == 1) {

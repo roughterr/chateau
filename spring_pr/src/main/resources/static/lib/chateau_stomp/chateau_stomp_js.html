@@ -48,6 +48,28 @@
                     return element.send_message_to_destination("group-chat", messagemap);
                 };
                 this._sent_messages = {};
+                // retries to send frames to the server
+                var retrySendFunction = function () {
+                    for (var destination in element._sent_messages) {
+                        if (element._sent_messages.hasOwnProperty(destination)) {
+                            var destinationObj = element._sent_messages[destination];
+                            for (var channelIndex = 0; channelIndex < 2; channelIndex++) {
+                                var channelObj = channelIndex == 0 ?
+                                        destinationObj.firstChannel :
+                                        destinationObj.secondChannel;
+                                for (index = 0; index < channelObj.waitingList.length; ++index) {
+                                    var messageObj = channelObj.waitingList[index];
+                                    if (messageObj.waitingAckForLong != null && messageObj.waitingAckForLong) {
+                                        console.log("Sending a message once again.");
+                                        element._socket.send(JSON.stringify(messageObj.messageMap));
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    setTimeout(retrySendFunction, 5000);
+                };
+                retrySendFunction();
             },
             /**
              * Connects to the server.
@@ -91,16 +113,16 @@
                         return;
                     }
                     messageMap[element.FRAME_PARAM_NAME] = null;
+                    // get a destination object
+                    var destinationObj = element._sent_messages[destination];
+                    if (destinationObj == null) {
+                        console.log('Server sent a message with unknown destination. The destination is ' + destination);
+                        return;
+                    }
+                    // get the channel object
+                    var channelObj = channel == 0 ? destinationObj.firstChannel : destinationObj.secondChannel;
                     if (frame == element.ACK_FRAME_NAME) {
                         console.log('The client got an acknowledgement about the message: ' + message);
-                        // get a destination object
-                        var destinationObj = element._sent_messages[destination];
-                        if (destinationObj == null) {
-                            console.log('Server sent a message with unknown destination. The destination is ' + destination);
-                            return;
-                        }
-                        // get the channel object
-                        var channelObj = channel == 0 ? destinationObj.firstChannel : destinationObj.secondChannel;
                         var waitingMessageData = null;
                         var indexFound = null;
                         for (index = 0; index < channelObj.waitingList.length; ++index) {
@@ -114,7 +136,7 @@
                         if (waitingMessageData == null) {
                             console.log('The client does not want to know about message number ' + messageID);
                         } else {
-                            channelObj.waitingList.splice(indexFound, 1); //remove a message to the queue
+                            channelObj.waitingList.splice(indexFound, 1); //remove a message from the queue
                             waitingMessageData.onAck(messageMap);
                             // index of the other channel
                             var otherChannel = channel == 0 ? 1 : 0;
@@ -124,11 +146,10 @@
                             // if the other channel is fresh.
                             if (otherChannelObj.lastMessageID == -1) {
                                 // Switching to the other channel.
-                                console.log("Switching to the other channel.");
+                                console.log("Current channel is " + destinationObj.currentChannel +
+                                        ". Switching to the other channel.");
                                 destinationObj.currentChannel = otherChannel;
                             }
-                            console.log("destinationObj.currentChannel='" + destinationObj.currentChannel +
-                                    "', channel='" + channel + "', " + channelObj.waitingList.length);
                             //if the other channel already active and the current channel's waiting list is empty.
                             if (channel != destinationObj.currentChannel && channelObj.waitingList.length == 0) {
                                 console.log('cleaning this channel.');
@@ -140,32 +161,38 @@
                                 element._request_channel_clean(destination, otherChannel);
                             }
                         }
+                    } else if (frame == element.CLEANED_FRAME_NAME) {
+                        // reset the waiting list
+                        console.log("CLEANED frame received. Reset the waiting list.");
+                        channelObj.waitingList = [];
+                        channelObj.lastMessageID = -1;
                     } else {
                         console.log('Unsupported frame type.');
                     }
                 };
             },
             _request_channel_clean: function (destination, channelIndex) {
+                console.log('_request_channel_clean.');
                 var element = this;
                 // get the channel object
                 var destinationObj = this._sent_messages[destination];
                 var channelObj = channelIndex == 0 ? destinationObj.firstChannel : destinationObj.secondChannel;
-                if (channelObj.cleaning == null || channelObj.cleaning == false) {
-                    channelObj.cleaning = true;
-                    var sendCleanFunction = function () {
-                        console.log("cleaning a channel.");
-                        var cleanFrameMap = {};
-                        cleanFrameMap[element.FRAME_PARAM_NAME] = element.CLEAN_FRAME_NAME;
-                        cleanFrameMap[element.DESTINATION_PARAM_NAME] = destination;
-                        cleanFrameMap[element.CHANNEL_PARAM_NAME] = channelIndex;
-                        //sending the frame
-                        element._socket.send(JSON.stringify(cleanFrameMap));
-                        if (channelObj.cleaning == true) {
-                            setTimeout(sendCleanFunction, 5000);
-                        }
-                    };
-                    sendCleanFunction();
-                }
+                var cleanFrameMap = {};
+                cleanFrameMap[element.FRAME_PARAM_NAME] = element.CLEAN_FRAME_NAME;
+                cleanFrameMap[element.DESTINATION_PARAM_NAME] = destination;
+                cleanFrameMap[element.CHANNEL_PARAM_NAME] = channelIndex;
+                var messageObj = {};
+                messageObj.messageMap = cleanFrameMap;
+                messageObj.waitingAckForLong = false;
+                channelObj.waitingList.push(messageObj);
+                setTimeout(function () {
+                    // if some times passed and the map stills exists, then setting a flag that means that the client
+                    // has been waiting an acknowledgment for a long time.
+                    if (messageObj != null) {
+                        messageObj.waitingAckForLong = true;
+                    }
+                }, 5000);
+                element._socket.send(JSON.stringify(cleanFrameMap));
             },
             /**
              * Sends a message to a specific destination. The function does not know anything about message delivery
@@ -190,15 +217,23 @@
                 message[this.DESTINATION_PARAM_NAME] = destination;
                 message[this.MESSAGEID_PARAM_NAME] = channelObj.lastMessageID;
                 // Adding a message map to the register only after all fields are filled.
-                var waitingMessageData = {};
-                waitingMessageData.messageID = channelObj.lastMessageID;
-                waitingMessageData.sentMessage = message;
-                waitingMessageData.onAck = function (messageMap) {
+                var messageObj = {};
+                messageObj.messageID = channelObj.lastMessageID;
+                messageObj.messageMap = message;
+                messageObj.onAck = function (messageMap) {
                     console.log("Message ack received.");
                 };
-                channelObj.waitingList.push(waitingMessageData);
+                channelObj.waitingList.push(messageObj);
                 element._socket.send(JSON.stringify(message));
-                return waitingMessageData;
+                messageObj.waitingAckForLong = false;
+                setTimeout(function () {
+                    // if some times passed and the map stills exists, then setting a flag that means that the client
+                    // has been waiting an acknowledgment for a long time.
+                    if (messageObj != null) {
+                        messageObj.waitingAckForLong = true;
+                    }
+                }, 5000);
+                return messageObj;
             },
             /**
              * Creates an instance of an object that has data about 1 channel of messages.
