@@ -112,6 +112,11 @@ public class WebSocketHandler extends TextWebSocketHandler {
 
     @Override
     public void afterConnectionClosed(WebSocketSession session, CloseStatus status) throws Exception {
+        Map<String, Map<String, DestinationMessages>> userData =
+                lastMessageIndices.get(session.getPrincipal().getName());
+        if (userData != null) {
+            userData.remove(session.getId());
+        }
         System.out.println("afterConnectionClosed.");
     }
 
