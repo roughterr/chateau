@@ -9,9 +9,7 @@ import org.springframework.web.socket.TextMessage;
 import org.springframework.web.socket.WebSocketSession;
 import org.springframework.web.socket.handler.TextWebSocketHandler;
 
-import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 
 @Component
@@ -49,67 +47,20 @@ public class WebSocketHandler extends TextWebSocketHandler {
      */
     public static final String CLEANED_FRAME_NAME = "CLEANED";
 
-    private static Map<String, Object> destinationBinding = new HashMap<>();
+    /**
+     * Name of a frame that contains a message to send.
+     */
+    public static final String SEND_FRAME_NAME = "SEND";
 
     /**
-     * Map with indices of last messages sent to destinations.
-     * Map [ user_id, Map [ session_id, Map [ destination, DestinationMessages ] ] ]
+     * Destination for sending messages of a group chat.
      */
-    private static Map<String, Map<String, Map<String, DestinationMessages>>> lastMessageIndices = new HashMap<>();
-    /**
-     * This map contains active websocket sessions. Key is a user ID. value is a list of objects of WebSocket session.
-     */
-    private static Map<String, List<WebSocketSession>> activeSessions = new HashMap<>();
+    public static final String GROUPCHAT_DESTINATION = "group-chat";
 
     /**
-     * Returns an object that one can use to manage the channel's data.
-     * Returns a value of an object of type Map<String, DestinationMessages>. If the object is not present, creates one.
-     *
-     * @param destination         key
-     * @param sessionDestinations map
-     * @return value
+     * Map [ user_id, Map [ WebSocketSession, WebSocketSessionData ]
      */
-    private static DestinationMessages getDestinationMessagesFromSession(String destination,
-                                                                         Map<String, DestinationMessages> sessionDestinations) {
-        if (sessionDestinations.containsKey(destination)) {
-            return sessionDestinations.get(destination);
-        } else {
-            final DestinationMessages newDestinationMessagesObj = new DestinationMessages();
-            sessionDestinations.put(destination, newDestinationMessagesObj);
-            return newDestinationMessagesObj;
-        }
-    }
-
-    /**
-     * Returns a value from a map. The value is a map too. If the value is not present or null, the method creates a
-     * new map and pushes it to the first map. In the last case, the new map is returned.
-     *
-     * @param key key
-     * @param map map
-     * @param <A> type of the key of the value
-     * @param <B> type of the value of the value
-     * @return value that is of a map type
-     */
-    private static <A, B> Map<A, B> getMapFromMap(String key, Map<String, Map<A, B>> map) {
-        if (map.containsKey(key)) {
-            return map.get(key);
-        } else {
-            final Map<A, B> newMap = new HashMap<>();
-            map.put(key, newMap);
-            return newMap;
-        }
-    }
-
-    /**
-     * @param userID      user ID
-     * @param sessionID   session ID
-     * @param destination message destination. For example, /topic1
-     */
-    public static DestinationMessages getDestinationMessagesObj(String userID, String sessionID, String destination) {
-        final Map<String, Map<String, DestinationMessages>> userMap = getMapFromMap(userID, lastMessageIndices);
-        final Map<String, DestinationMessages> sessionMap = getMapFromMap(sessionID, userMap);
-        return getDestinationMessagesFromSession(destination, sessionMap);
-    }
+    private static Map<String, Map<WebSocketSession, WebSocketSessionData>> sessionsData = new HashMap<>();
 
     @Override
     public void handleTransportError(WebSocketSession session, Throwable throwable) throws Exception {
@@ -118,19 +69,13 @@ public class WebSocketHandler extends TextWebSocketHandler {
 
     @Override
     public void afterConnectionClosed(WebSocketSession session, CloseStatus status) throws Exception {
-        {
-            final Map<String, Map<String, DestinationMessages>> userData =
-                    lastMessageIndices.get(session.getPrincipal().getName());
-            if (userData != null) {
-                userData.remove(session.getId());
-            }
-        }
-        if (activeSessions.containsKey(session.getPrincipal().getName())) {
-            final List<WebSocketSession> listOfUserSessions = activeSessions.get(session.getPrincipal().getName());
-            listOfUserSessions.remove(session);
+        final Map<WebSocketSession, WebSocketSessionData> oneUserData =
+                sessionsData.get(session.getPrincipal().getName());
+        if (oneUserData != null) {
+            oneUserData.remove(session);
             // if it was the only active session of the user
-            if (listOfUserSessions.isEmpty()) {
-                activeSessions.remove(session.getPrincipal().getName());
+            if (oneUserData.isEmpty()) {
+                sessionsData.remove(session.getPrincipal().getName());
             }
         }
         System.out.println("afterConnectionClosed.");
@@ -138,19 +83,22 @@ public class WebSocketHandler extends TextWebSocketHandler {
 
     @Override
     public void afterConnectionEstablished(WebSocketSession session) throws Exception {
-        if (activeSessions.containsKey(session.getPrincipal().getName())) {
-            activeSessions.get(session.getPrincipal().getName()).add(session);
+        final Map<WebSocketSession, WebSocketSessionData> oneUserData;
+        if (sessionsData.containsKey(session.getPrincipal().getName())) {
+            oneUserData = sessionsData.get(session.getPrincipal().getName());
         } else {
-            final List<WebSocketSession> listOfUserSessions = new ArrayList<>();
-            listOfUserSessions.add(session);
-            activeSessions.put(session.getPrincipal().getName(), listOfUserSessions);
+            oneUserData = new HashMap<>();
+            sessionsData.put(session.getPrincipal().getName(), oneUserData);
+        }
+        if (!oneUserData.containsKey(session)) {
+            oneUserData.put(session, new WebSocketSessionData());
         }
         System.out.println("afterConnectionEstablished.");
     }
 
     @Override
     protected void handleTextMessage(WebSocketSession session, TextMessage jsonTextMessage) throws Exception {
-        System.out.println("afterConnectionEstablished received. message = '" + jsonTextMessage.getPayload() +
+        System.out.println("handleTextMessage. message = '" + jsonTextMessage.getPayload() +
                 "', session.getPrincipal().getName()='" + session.getPrincipal().getName() + "'.");
         final JsonParser parser = new BasicJsonParser();
         try {
@@ -163,10 +111,10 @@ public class WebSocketHandler extends TextWebSocketHandler {
                     parsed.get(DESTINATION_PARAMETER_NAME).toString() : "";
             final String frame = parsed.containsKey(FRAME_PARAM_NAME) ?
                     parsed.get(FRAME_PARAM_NAME).toString() : "";
+            final DestinationMessages destinationMessages =
+                    sessionsData.get(session.getPrincipal().getName()).get(session).getDestinationObj(destination);
             if (frame.equals(CLEAN_FRAME_NAME)) {
                 System.out.println("Clean frame received.");
-                DestinationMessages destinationMessages = getDestinationMessagesObj(session.getPrincipal().getName(),
-                        session.getId(), destination);
                 destinationMessages.cleanChannel(channelNumber);
                 Map<String, Object> mapToSend = new HashMap<>();
                 mapToSend.put(DESTINATION_PARAMETER_NAME, destination);
@@ -174,13 +122,13 @@ public class WebSocketHandler extends TextWebSocketHandler {
                 mapToSend.put(FRAME_PARAM_NAME, CLEANED_FRAME_NAME);
                 final String json = new ObjectMapper().writeValueAsString(mapToSend);
                 session.sendMessage(new TextMessage(json));
-            } else {
+            } else if (frame.equals(SEND_FRAME_NAME)) {
+                System.out.println("Send frame received.");
                 parsed.remove(CHANNEL_PARAMETER_NAME);
                 final int messageid = parsed.containsKey(MESSAGEID_PARAMETER_NAME) ?
                         Integer.parseInt(parsed.get(MESSAGEID_PARAMETER_NAME).toString()) : 0;
                 parsed.remove(MESSAGEID_PARAMETER_NAME);
-                int updateLastMessageResult = getDestinationMessagesObj(session.getPrincipal().getName(),
-                        session.getId(), destination).registerMessage(channelNumber, messageid);
+                int updateLastMessageResult = destinationMessages.registerMessage(channelNumber, messageid);
                 Map<String, Object> mapToSend = new HashMap<>();
                 mapToSend.put(DESTINATION_PARAMETER_NAME, destination);
                 if (channelNumber == 1) {
@@ -194,6 +142,8 @@ public class WebSocketHandler extends TextWebSocketHandler {
                 mapToSend.put(MESSAGEID_PARAMETER_NAME, messageid);
                 final String json = new ObjectMapper().writeValueAsString(mapToSend);
                 session.sendMessage(new TextMessage(json));
+            } else {
+                System.out.println("Unknown type of frame: " + frame);
             }
         } catch (Exception e) {
             e.printStackTrace();
@@ -201,11 +151,33 @@ public class WebSocketHandler extends TextWebSocketHandler {
     }
 
     /**
-     * Sends a message to a destination.
-     * @param destination destination
-     * @param messageMap attributes of the message
+     * Processes a message.
+     *
+     * @param addresseeID ID of the user to whom the message was addressed
+     * @param destination message destination
+     * @param messageMap  parameters of the message
      */
-    public void sendMessageToDestination(String destination, Map messageMap) {
+    void handleMessage(String addresseeID, String destination, Map messageMap) {
+        if (destination.equals(GROUPCHAT_DESTINATION)) {
+            // send the message to the addressee.
+            if (sessionsData.containsKey(addresseeID)) {
+                for (WebSocketSession webSocketSession : sessionsData.get(addresseeID).keySet()) {
+                    sendMessageToDestination(GROUPCHAT_DESTINATION, messageMap, webSocketSession);
+                }
+            }
+        } else {
+            System.out.println("Unknown destination: " + destination);
+        }
+    }
+
+    /**
+     * Sends a message to a destination.
+     *
+     * @param destination      destination
+     * @param messageMap       attributes of the message
+     * @param webSocketSession WebSocket session to send a message to
+     */
+    public void sendMessageToDestination(String destination, Map messageMap, WebSocketSession webSocketSession) {
 
     }
 }

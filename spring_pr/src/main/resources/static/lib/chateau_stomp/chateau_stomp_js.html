@@ -38,6 +38,8 @@
             CLEAN_FRAME_NAME: "CLEAN",
             /** Name of a frame that tells that the cleaning operation has completed successfully. */
             CLEANED_FRAME_NAME: "CLEANED",
+            /** Name of a frame that contains a message to send. */
+            SEND_FRAME_NAME: "SEND",
 
             ready: function () {
                 console.log("chateau-stomp-js is ready.");
@@ -209,6 +211,7 @@
                     this._sent_messages[destination] = destinationObj;
                 }
                 var element = this;
+                message[element.FRAME_PARAM_NAME] = this.SEND_FRAME_NAME;
                 message[this.CHANNEL_PARAM_NAME] = destinationObj.currentChannel;
                 var channelObj = destinationObj.currentChannel == 0 ?
                         destinationObj.firstChannel :
