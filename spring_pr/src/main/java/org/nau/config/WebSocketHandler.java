@@ -9,7 +9,9 @@ import org.springframework.web.socket.TextMessage;
 import org.springframework.web.socket.WebSocketSession;
 import org.springframework.web.socket.handler.TextWebSocketHandler;
 
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 @Component
@@ -75,6 +77,11 @@ public class WebSocketHandler extends TextWebSocketHandler {
     }
 
     /**
+     * This map contains active websocket sessions. Key is a user ID. value is a list of objects of WebSocket session.
+     */
+    private static Map<String, List<WebSocketSession>> activeSessions = new HashMap<>();
+
+    /**
      * Returns a value from a map. The value is a map too. If the value is not present or null, the method creates a
      * new map and pushes it to the first map. In the last case, the new map is returned.
      *
@@ -112,16 +119,33 @@ public class WebSocketHandler extends TextWebSocketHandler {
 
     @Override
     public void afterConnectionClosed(WebSocketSession session, CloseStatus status) throws Exception {
-        Map<String, Map<String, DestinationMessages>> userData =
-                lastMessageIndices.get(session.getPrincipal().getName());
-        if (userData != null) {
-            userData.remove(session.getId());
+        {
+            final Map<String, Map<String, DestinationMessages>> userData =
+                    lastMessageIndices.get(session.getPrincipal().getName());
+            if (userData != null) {
+                userData.remove(session.getId());
+            }
+        }
+        if (activeSessions.containsKey(session.getPrincipal().getName())) {
+            final List<WebSocketSession> listOfUserSessions = activeSessions.get(session.getPrincipal().getName());
+            listOfUserSessions.remove(session);
+            // if it was the only active session of the user
+            if (listOfUserSessions.isEmpty()) {
+                activeSessions.remove(session.getPrincipal().getName());
+            }
         }
         System.out.println("afterConnectionClosed.");
     }
 
     @Override
     public void afterConnectionEstablished(WebSocketSession session) throws Exception {
+        if (activeSessions.containsKey(session.getPrincipal().getName())) {
+            activeSessions.get(session.getPrincipal().getName()).add(session);
+        } else {
+            final List<WebSocketSession> listOfUserSessions = new ArrayList<>();
+            listOfUserSessions.add(session);
+            activeSessions.put(session.getPrincipal().getName(), listOfUserSessions);
+        }
         System.out.println("afterConnectionEstablished.");
     }
 
