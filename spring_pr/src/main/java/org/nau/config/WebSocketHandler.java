@@ -56,6 +56,10 @@ public class WebSocketHandler extends TextWebSocketHandler {
      * Map [ user_id, Map [ session_id, Map [ destination, DestinationMessages ] ] ]
      */
     private static Map<String, Map<String, Map<String, DestinationMessages>>> lastMessageIndices = new HashMap<>();
+    /**
+     * This map contains active websocket sessions. Key is a user ID. value is a list of objects of WebSocket session.
+     */
+    private static Map<String, List<WebSocketSession>> activeSessions = new HashMap<>();
 
     /**
      * Returns an object that one can use to manage the channel's data.
@@ -75,11 +79,6 @@ public class WebSocketHandler extends TextWebSocketHandler {
             return newDestinationMessagesObj;
         }
     }
-
-    /**
-     * This map contains active websocket sessions. Key is a user ID. value is a list of objects of WebSocket session.
-     */
-    private static Map<String, List<WebSocketSession>> activeSessions = new HashMap<>();
 
     /**
      * Returns a value from a map. The value is a map too. If the value is not present or null, the method creates a
@@ -199,5 +198,14 @@ public class WebSocketHandler extends TextWebSocketHandler {
         } catch (Exception e) {
             e.printStackTrace();
         }
+    }
+
+    /**
+     * Sends a message to a destination.
+     * @param destination destination
+     * @param messageMap attributes of the message
+     */
+    public void sendMessageToDestination(String destination, Map messageMap) {
+
     }
 }
