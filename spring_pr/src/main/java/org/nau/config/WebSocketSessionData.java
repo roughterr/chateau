@@ -1,7 +1,5 @@
 package org.nau.config;
 
-import org.springframework.web.socket.WebSocketSession;
-
 import java.util.HashMap;
 import java.util.Map;
 
@@ -10,9 +8,9 @@ import java.util.Map;
  */
 public class WebSocketSessionData {
     /**
-     * Key is a destination. Value is indices of incoming messages that belong to the specific destination.
+     * Key is a destination. Value is data of the destination.
      */
-    private Map<String, DestinationMessages> receivedMessagesIndices;
+    private Map<String, DestinationData> receivedMessagesIndices;
 
     /**
      * Constructor.
@@ -22,17 +20,16 @@ public class WebSocketSessionData {
     }
 
     /**
-     * Returns an object with data about indices of received messages that belong to one destination and one WebSocket
-     * session.
+     * Returns an object with data about a destination.
      *
-     * @param destination
-     * @return DestinationMessages object
+     * @param destination message destination
+     * @return key is a destination. Value is data of the destination.
      */
-    public DestinationMessages getDestinationObj(String destination) {
+    public DestinationData getDestinationObj(String destination) {
         if (receivedMessagesIndices.containsKey(destination)) {
             return receivedMessagesIndices.get(destination);
         } else {
-            final DestinationMessages destinationObj = new DestinationMessages();
+            final DestinationData destinationObj = new DestinationData();
             receivedMessagesIndices.put(destination, destinationObj);
             return destinationObj;
         }

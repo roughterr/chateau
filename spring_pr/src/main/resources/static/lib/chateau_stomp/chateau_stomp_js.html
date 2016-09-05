@@ -168,6 +168,9 @@
                         console.log("CLEANED frame received. Reset the waiting list.");
                         channelObj.waitingList = [];
                         channelObj.lastMessageID = -1;
+                    }  else if (frame == element.SEND_FRAME_NAME) {
+                        console.log("SEND frame received.");
+                        //TODO
                     } else {
                         console.log('Unsupported frame type.');
                     }
