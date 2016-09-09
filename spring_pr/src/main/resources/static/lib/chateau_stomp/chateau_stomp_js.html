@@ -22,6 +22,14 @@
                  * */
                 _sent_messages: {
                     type: Object
+                },
+                /**
+                 * Map, where the key is a destination, and the value is an object that has the following fields:
+                 * 1. firstChannelLastMessageID - ID of the last registered message of the first channel;
+                 * 2. secondChannelLastMessageID - ID of the last registered message of the second channel.
+                 */
+                _received_messages: {
+                    type: Object
                 }
             },
             /** Name of JSON parameter that is a destination. */
@@ -50,6 +58,7 @@
                     return element.send_message_to_destination("group-chat", messagemap);
                 };
                 this._sent_messages = {};
+                this._received_messages = {};
                 // retries to send frames to the server
                 var retrySendFunction = function () {
                     for (var destination in element._sent_messages) {
@@ -107,7 +116,6 @@
                     if (messageID == null || messageID == '') {
                         messageID = 0;
                     }
-                    messageMap[element.MESSAGEID_PARAM_NAME] = null;
                     // get a frame name
                     var frame = messageMap[element.FRAME_PARAM_NAME];
                     if (frame == null || frame == '') {
@@ -168,9 +176,15 @@
                         console.log("CLEANED frame received. Reset the waiting list.");
                         channelObj.waitingList = [];
                         channelObj.lastMessageID = -1;
-                    }  else if (frame == element.SEND_FRAME_NAME) {
+                    } else if (frame == element.SEND_FRAME_NAME) {
                         console.log("SEND frame received.");
+                        var receivedDestinationObject = element._received_messages[destination];
+                        if (receivedDestinationObject == null) {
+                            receivedDestinationObject = element._create_new_received_destination_object();
+                            element._received_messages[destination] = receivedDestinationObject;
+                        }
                         //TODO
+                        var updateLastMessageResult = element._registerMessage(channel, messageID, receivedDestinationObject);
                     } else {
                         console.log('Unsupported frame type.');
                     }
@@ -243,6 +257,7 @@
             },
             /**
              * Creates an instance of an object that has data about 1 channel of messages.
+             * @return {{}}
              */
             _create_new_destination_object: function () {
                 var destinationObj = {};
@@ -254,6 +269,56 @@
                 destinationObj.secondChannel.lastMessageID = -1;
                 destinationObj.currentChannel = 0; //first channel
                 return destinationObj;
+            },
+            /**
+             * Creates an object that contains data about indices of received messages that belong to one channel.
+             * @return {{}}
+             */
+            _create_new_received_destination_object: function () {
+                var destinationObj = {};
+                destinationObj.firstChannelLastMessageID = -1;
+                destinationObj.secondChannelLastMessageID = -1;
+                return destinationObj;
+            },
+            /**
+             * Deletes data about received messages of one channel.
+             * @param channelIndex
+             * @param receivedDestinationObject
+             * @private
+             */
+            _clean_channel: function (channelIndex, receivedDestinationObject) {
+                if (channelIndex == 0) {
+                    receivedDestinationObject.firstChannelLastMessageID = -1;
+                } else {
+                    receivedDestinationObject.secondChannelLastMessageID = -1;
+                }
+            },
+            /**
+             * Registers a new message.
+             * @param channelIndex
+             * @param messageID
+             * @param receivedDestinationObject
+             * @returns {*}
+             * @private
+             */
+            _registerMessage: function (channelIndex, messageID, receivedDestinationObject) {
+                if (messageID < 0) {
+                    return -2;
+                }
+                if (channelIndex == 0) {
+                    if (receivedDestinationObject.firstChannelLastMessageID + 1 == messageID) {
+                        receivedDestinationObject.firstChannelLastMessageID++;
+                        return -1;
+                    }
+                    return receivedDestinationObject.firstChannelLastMessageID;
+                } else if (channelIndex == 1) {
+                    if (receivedDestinationObject.secondChannelLastMessageID + 1 == messageID) {
+                        receivedDestinationObject.secondChannelLastMessageID++;
+                        return -1;
+                    }
+                    return receivedDestinationObject.secondChannelLastMessageID;
+                }
+                return -1;
             }
         });
     </script>
