@@ -8,6 +8,10 @@
                     type: Object,
                     notify: true
                 },
+                got_message_function: {
+                    type: Object,
+                    notify: true
+                },
                 // WebSocket connection to the server.
                 _socket: {
                     type: Object
@@ -191,7 +195,11 @@
                             var updateLastMessageResult = element._registerMessage(channel, messageID, receivedDestinationObject);
                             if (updateLastMessageResult == -1) {
                                 mapToSend[element.FRAME_PARAM_NAME] = element.ACK_FRAME_NAME;
-                                //TODO process the message
+                                var drawMessageMap = {};
+                                drawMessageMap['username'] = messageMap['senderUserID'];
+                                drawMessageMap['content'] = messageMap['content'];
+                                drawMessageMap['date'] = messageMap['date'];
+                                element.got_message_function(drawMessageMap);
                             } else {
                                 mapToSend[element.FRAME_PARAM_NAME] = element.NACK_FRAME_NAME;
                             }

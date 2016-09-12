@@ -10,6 +10,8 @@ import org.springframework.web.socket.TextMessage;
 import org.springframework.web.socket.WebSocketSession;
 import org.springframework.web.socket.handler.TextWebSocketHandler;
 
+import java.text.SimpleDateFormat;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -230,7 +232,9 @@ public class WebSocketHandler extends TextWebSocketHandler {
      */
     void handleMessage(String senderUserID, String destination, Map messageMap) throws Exception {
         if (destination.equals(GROUPCHAT_DESTINATION)) {
+            String date = new SimpleDateFormat("HH:mm:ss").format(new Date());
             messageMap.put(GroupChatController.SENDER_USER_ID_PARAMETER_NAME, senderUserID);
+            messageMap.put(GroupChatController.DATE_PARAMETER_NAME, date);
             // send a message to all users except the sender
             for (Map.Entry<String, Map<WebSocketSession, WebSocketSessionData>> entry : sessionsData.entrySet()) {
                 if (!entry.getKey().equals(senderUserID)) {
