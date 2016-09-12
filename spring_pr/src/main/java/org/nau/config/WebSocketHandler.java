@@ -1,6 +1,7 @@
 package org.nau.config;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.nau.groupchat.GroupChatController;
 import org.springframework.boot.json.BasicJsonParser;
 import org.springframework.boot.json.JsonParser;
 import org.springframework.stereotype.Component;
@@ -107,6 +108,7 @@ public class WebSocketHandler extends TextWebSocketHandler {
             //absence of a channel number means the zero channel.
             final int channelNumber = parsed.containsKey(CHANNEL_PARAMETER_NAME) ?
                     Integer.parseInt(parsed.get(CHANNEL_PARAMETER_NAME).toString()) : 0;
+            final boolean channelBool = DestinationSentMessagesData.getChannelBoolValueByIntValue(channelNumber);
             final String destination = parsed.containsKey(DESTINATION_PARAMETER_NAME) ?
                     parsed.get(DESTINATION_PARAMETER_NAME).toString() : "";
             final String frame = parsed.containsKey(FRAME_PARAM_NAME) ?
@@ -145,12 +147,77 @@ public class WebSocketHandler extends TextWebSocketHandler {
                 if (updateLastMessageResult == -1) {
                     handleMessage(session.getPrincipal().getName(), destination, parsed);
                 }
+            } else if (frame.equals(ACK_FRAME_NAME) || frame.equals(NACK_FRAME_NAME) || frame.equals(CLEANED_FRAME_NAME)) {
+                final DestinationSentMessagesData destinationSentMessagesData =
+                        sessionsData.get(session.getPrincipal().getName()).get(session).getDestinationObj(destination).getDestinationSentMessagesData();
+                final ChannelSentMessagesData channelObj = channelNumber == 0 ?
+                        destinationSentMessagesData.getFirstChannel() : destinationSentMessagesData.getSecondChannel();
+                if (frame.equals(CLEANED_FRAME_NAME)) {
+                    System.out.println("CLEANED frame received.");
+                    channelObj.getWaitingList().clear();
+                    channelObj.resetLastMessageID();
+                } else if (frame.equals(ACK_FRAME_NAME)) {
+                    System.out.println("ACK frame received.");
+                    final int messageID = parsed.containsKey(MESSAGEID_PARAMETER_NAME) ?
+                            Integer.parseInt(parsed.get(MESSAGEID_PARAMETER_NAME).toString()) : 0;
+                    Message waitingMessageFound = null;
+                    for (Message waitingMessage : channelObj.getWaitingList()) {
+                        if (waitingMessage.getMessageID() == messageID) {
+                            waitingMessageFound = waitingMessage;
+                            System.out.println("Waiting message found.");
+                            break;
+                        }
+                    }
+                    if (waitingMessageFound == null) {
+                        System.out.println("The client sent ACK about an unknown message ID.");
+                    } else {
+                        channelObj.getWaitingList().remove(waitingMessageFound);
+                        final boolean otherChannel = !channelBool;
+                        final ChannelSentMessagesData otherChannelObj = otherChannel ?
+                                destinationSentMessagesData.getSecondChannel() : destinationSentMessagesData.getFirstChannel();
+                        // if the other channel is fresh.
+                        if (otherChannelObj.getLastMessageID() == -1) {
+                            // Switching to the other channel.
+                            System.out.println("Current channel is " + destinationSentMessagesData.getCurrentChannelIntValue() +
+                                    ". Switching to the other channel.");
+                            destinationSentMessagesData.setCurrentChannel(otherChannel);
+                        }
+                        // If the other channel already active and the current channel's waiting list is empty.
+                        if (channelBool != destinationSentMessagesData.getCurrentChannel() && channelObj.getWaitingList().size() == 0) {
+                            System.out.println("cleaning this channel.");
+                            requestChannelClean(session, destination, channelBool);
+                        }
+                        // Clean the other channel if necessary.
+                        if (otherChannelObj.getWaitingList().size() == 0 && otherChannelObj.getLastMessageID() > -1) {
+                            System.out.println("Cleaning the other channel.");
+                            requestChannelClean(session, destination, otherChannel);
+                        }
+                    }
+                }
             } else {
                 System.out.println("Unknown type of frame: " + frame);
             }
         } catch (Exception e) {
             e.printStackTrace();
         }
+    }
+
+    /**
+     * Requests a channel cleaning from a client.
+     *
+     * @param session     WebSocket session object
+     * @param destination destination
+     * @param channel     channel number in boolean format. 0 - false. 1 - true
+     * @throws Exception
+     */
+    private void requestChannelClean(WebSocketSession session, String destination, boolean channel) throws Exception {
+        System.out.println("requestChannelClean called. destination='" + destination + "', channel='" + channel + "'.");
+        Map messageMap = new HashMap();
+        messageMap.put(FRAME_PARAM_NAME, CLEAN_FRAME_NAME);
+        messageMap.put(CHANNEL_PARAMETER_NAME, channel ? 1 : 0);
+        messageMap.put(DESTINATION_PARAMETER_NAME, destination);
+        final String json = new ObjectMapper().writeValueAsString(messageMap);
+        session.sendMessage(new TextMessage(json));
     }
 
     /**
@@ -163,6 +230,7 @@ public class WebSocketHandler extends TextWebSocketHandler {
      */
     void handleMessage(String senderUserID, String destination, Map messageMap) throws Exception {
         if (destination.equals(GROUPCHAT_DESTINATION)) {
+            messageMap.put(GroupChatController.SENDER_USER_ID_PARAMETER_NAME, senderUserID);
             // send a message to all users except the sender
             for (Map.Entry<String, Map<WebSocketSession, WebSocketSessionData>> entry : sessionsData.entrySet()) {
                 if (!entry.getKey().equals(senderUserID)) {
@@ -193,14 +261,14 @@ public class WebSocketHandler extends TextWebSocketHandler {
                 "', messageMap='" + messageMap + "', webSocketSession='" + webSocketSession + "', " + webSocketSessionData + "'.");
         final DestinationSentMessagesData destinationSentMessagesData =
                 webSocketSessionData.getDestinationObj(destination).getDestinationSentMessagesData();
-        final ChannelSentMessagesData channelObj = destinationSentMessagesData.getCurrentChannel() == 0 ?
-                destinationSentMessagesData.getFirstChannel() : destinationSentMessagesData.getSecondChannel();
+        final ChannelSentMessagesData channelObj = destinationSentMessagesData.getCurrentChannel() ?
+                destinationSentMessagesData.getSecondChannel() : destinationSentMessagesData.getFirstChannel();
         final int newMessageID = channelObj.incrementLastMessageID();
         messageMap.put(FRAME_PARAM_NAME, SEND_FRAME_NAME);
-        messageMap.put(CHANNEL_PARAMETER_NAME, destinationSentMessagesData.getCurrentChannel());
+        messageMap.put(CHANNEL_PARAMETER_NAME, destinationSentMessagesData.getCurrentChannelIntValue());
         messageMap.put(MESSAGEID_PARAMETER_NAME, newMessageID);
-        channelObj.getWaitingList().add(messageMap);
         final Message messageObj = new MessageImpl(newMessageID, webSocketSession, messageMap);
+        channelObj.getWaitingList().add(messageObj);
         messageObj.sendMessage();
     }
 }

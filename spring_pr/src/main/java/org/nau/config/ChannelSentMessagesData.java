@@ -10,7 +10,8 @@ public class ChannelSentMessagesData {
     /**
      * A list of messages that are waiting to be confirmed by the server.
      */
-    private List waitingList = new ArrayList();
+    private List<Message> waitingList = new ArrayList<>();
+
     /**
      * ID of the last message that has been sent to the server.
      */
@@ -24,7 +25,23 @@ public class ChannelSentMessagesData {
         return lastMessageID;
     }
 
-    public List getWaitingList() {
+    public List<Message> getWaitingList() {
         return waitingList;
+    }
+
+    /**
+     * Returns ID of the last message in the channel.
+     *
+     * @return
+     */
+    public int getLastMessageID() {
+        return lastMessageID;
+    }
+
+    /**
+     * Returns the initial value to the last message ID variable.
+     */
+    public void resetLastMessageID() {
+        lastMessageID = -1;
     }
 }
