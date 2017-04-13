@@ -6,19 +6,18 @@ import { HttpModule } from '@angular/http';
 import { AppComponent } from './app.component';
 import { ChateauTypeMessageComponent } from './chateau-type-message/chateau-type-message.component';
 import { MaterialModule } from '@angular/material';
+import { ChateauMessageHistoryComponent } from './chateau-message-history/chateau-message-history.component';
 
 @NgModule({
   declarations: [
     AppComponent,
-    ChateauTypeMessageComponent
+    ChateauTypeMessageComponent,
+    ChateauMessageHistoryComponent
   ],
   imports: [
     BrowserModule,
     FormsModule,
     HttpModule,
-    MaterialModule
-  ],
-  exports: [
     MaterialModule
   ],
   providers: [],

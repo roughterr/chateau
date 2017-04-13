@@ -1,4 +1,4 @@
-import {Component, Input, OnInit} from '@angular/core';
+import {Component, EventEmitter, OnInit, Output} from '@angular/core';
 
 @Component({
   selector: 'app-chateau-type-message',
@@ -7,12 +7,12 @@ import {Component, Input, OnInit} from '@angular/core';
 })
 export class ChateauTypeMessageComponent implements OnInit {
   /** Text that the user has typed. */
-  textarea: string;
+  private textarea: string;
   /** This variable indicated that the operation was sending a message by Enter key. */
   private lastOperationWasSendByEnter = false;
-  /** The type message component calls this function after a user types a new message. */
-  @Input()
-  typenewmessagefunction: (string) => void = (str: string) => {};
+  /** The type message component calls an 'emit' method of this object after the user types a new message. */
+  @Output()
+  private typedMessagesEventEmitter: EventEmitter<string> = new EventEmitter<string>();
 
   constructor() {
   }
@@ -22,7 +22,7 @@ export class ChateauTypeMessageComponent implements OnInit {
 
   onSend() {
     if (this.textarea != null && this.textarea !== '') {
-      this.typenewmessagefunction(this.textarea);
+      this.typedMessagesEventEmitter.emit(this.textarea);
     }
     this.textarea = '';
   }
