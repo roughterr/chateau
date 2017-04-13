@@ -7,6 +7,8 @@ import {ChateauMessageHistoryComponent} from './chateau-message-history/chateau-
   styleUrls: ['./app.component.css']
 })
 export class AppComponent {
+  title = 'Chat';
+
   @ViewChild(ChateauMessageHistoryComponent)
   private chateauMessageHistoryComponent: ChateauMessageHistoryComponent;
 
@@ -16,5 +18,9 @@ export class AppComponent {
    */
   onNewMessageTyped(message: string) {
     this.chateauMessageHistoryComponent.drawNewMyMessageFunction({'content': message});
+    const ws: WebSocket = new WebSocket('ws://localhost:8080/hello/');
+    ws.onopen = function () {
+      console.log('Opened a WebSocket connection.');
+    };
   }
 }

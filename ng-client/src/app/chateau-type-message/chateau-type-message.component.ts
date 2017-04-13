@@ -7,7 +7,7 @@ import {Component, EventEmitter, OnInit, Output} from '@angular/core';
 })
 export class ChateauTypeMessageComponent implements OnInit {
   /** Text that the user has typed. */
-  private textarea: string;
+  textarea: string;
   /** This variable indicated that the operation was sending a message by Enter key. */
   private lastOperationWasSendByEnter = false;
   /** The type message component calls an 'emit' method of this object after the user types a new message. */
@@ -45,7 +45,7 @@ export class ChateauTypeMessageComponent implements OnInit {
   /**
    * It is called when a user types something in the input text area.
    */
-  onInputTextarea() {
+  onInputTextarea(keyboardEvent: KeyboardEvent) {
     if (this.lastOperationWasSendByEnter) {
       this.textarea = '';
       this.lastOperationWasSendByEnter = false;
