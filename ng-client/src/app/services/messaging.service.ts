@@ -1,6 +1,4 @@
-import {Injectable} from '@angular/core';
-import {Subscriber} from "rxjs/Subscriber";
-import {Observable} from "rxjs/Observable";
+import {EventEmitter, Injectable} from '@angular/core';
 
 @Injectable()
 export class MessagingService {
@@ -27,26 +25,18 @@ export class MessagingService {
    * @type {WebSocket}
    */
   private ws: WebSocket = new WebSocket('ws://localhost:8080/hello/');
+  private sentDestinations: SentDestinations = new SentDestinations();
 
-  sentMessages: Map<string, Destination>;
-
-  sendMessageToDestination(destination, message): Observable<any> {
+  sendMessageToDestination(destination, message) {
     console.log(`sendMessageToDestination called with the parameters: destination=${destination}, message=${message}`);
-    const someObj = new Map();
+    // const someObj = new Map();
     // if (this.ws.readyState === 1) {
-
-    if (!this.sentMessages.has(destination)) {
-      this.sentMessages[destination] = new Destination();
-    }
-
-    return Observable.create(subscriber => {
-        // TODO put subscriber somewhere
-        someObj.set('1', subscriber);
-
-        // subscriber.next('testTemplateID');
-        // subscriber.complete();
-      }
-    );
+    const channel: Channel = this.sentDestinations.getDestination(destination).getCurrentChannel();
+    const sentMessage: SentMessage = channel.sendMessage(new Map(), this.ws);
+    sentMessage.subscribeOnAcknowledge(() => {
+      console.log('sendMessageToDestination. subscribeOnAcknowledge');
+    });
+    sentMessage.markAsAcknowledged(new Map());
   }
 
   sendMessageFunction = function (messagemap) {
@@ -54,13 +44,76 @@ export class MessagingService {
   };
 }
 
-class Destination {
-  firstChannel: Channel = new Channel();
-  secondChannel: Channel = new Channel();
-  currentChannel = 0;
+class SentMessage {
+  payloadMap: Map<string, string>;
+  private acknowledgeEventEmitter: EventEmitter<Map<any, any>> = new EventEmitter();
+
+  constructor(payloadMap: Map<string, string>) {
+    this.payloadMap = payloadMap;
+  }
+
+  subscribeOnAcknowledge(subscriber: (responseBodyMap: Map<any, any>) => void) {
+    this.acknowledgeEventEmitter.subscribe(subscriber);
+  }
+
+  markAsAcknowledged(responseBodyMap: Map<any, any>) {
+    this.acknowledgeEventEmitter.next(responseBodyMap);
+    this.acknowledgeEventEmitter.complete();
+  }
 }
 
 class Channel {
-  waitingList;
-  lastMessageID;
+  private waitingList: Map<number, SentMessage> = new Map();
+  /**
+   * List of packages that we are supposed to have already received acknowledgement about.
+   * @type {Array}
+   */
+  private slowpokePackages: SentMessage[] = [];
+  private lastMessageID = -1;
+
+  sendMessage(messageMap: Map<string, string>, ws: WebSocket): SentMessage {
+    this.lastMessageID++;
+    messageMap['messageID'] = this.lastMessageID;
+    const sentMessage: SentMessage = new SentMessage(messageMap);
+    const json: string = JSON.stringify(messageMap);
+    this.waitingList.set(this.lastMessageID, sentMessage);
+    ws.send(json);
+    return sentMessage;
+    // TODO timeout and add an item slowpokePackages
+  }
 }
+
+class Destination {
+  /** An object with data of the first channel. */
+  firstChannel: Channel = new Channel();
+  /** An object with data of the second channel. */
+  secondChannel: Channel = new Channel();
+  /** ID of the current channel. Possible values are: 0, 1. */
+  currentChannel = 0;
+
+  getCurrentChannel(): Channel {
+    return this.currentChannel === 0 ? this.firstChannel : this.secondChannel;
+  }
+}
+
+/**
+ * Contains data about packages sent to destinations.
+ */
+class SentDestinations {
+  /**
+   * Map, where the key is a destination and value is data of the destination.
+   */
+  destinations: Map<string, Destination> = new Map();
+
+  getDestination(destination: string) {
+    if (this.destinations.has(destination)) {
+      return this.destinations[destination];
+    } else {
+      const destinationObj = new Destination();
+      this.destinations.set(destination, destinationObj);
+      return destinationObj;
+    }
+  }
+}
+
+
