@@ -27,12 +27,12 @@ export class MessagingService {
   private ws: WebSocket = new WebSocket('ws://localhost:8080/hello/');
   private sentDestinations: SentDestinations = new SentDestinations();
 
-  sendMessageToDestination(destination, message) {
-    console.log(`sendMessageToDestination called with the parameters: destination=${destination}, message=${message}`);
+  sendMessageToDestination(destination, payloadMap) {
+    console.log(`sendMessageToDestination called with the parameters: destination=${destination}, payloadMap=${payloadMap}`);
     // const someObj = new Map();
     // if (this.ws.readyState === 1) {
     const channel: Channel = this.sentDestinations.getDestination(destination).getCurrentChannel();
-    const sentMessage: SentMessage = channel.sendMessage(new Map(), this.ws);
+    const sentMessage: SentMessage = channel.sendMessage(payloadMap, this.ws);
     sentMessage.subscribeOnAcknowledge(() => {
       console.log('sendMessageToDestination. subscribeOnAcknowledge');
     });
@@ -69,13 +69,18 @@ class Channel {
    * @type {Array}
    */
   private slowpokePackages: SentMessage[] = [];
+  /**
+   * ID of the last message in the channel.
+   * @type {number}
+   */
   private lastMessageID = -1;
 
-  sendMessage(messageMap: Map<string, string>, ws: WebSocket): SentMessage {
+  sendMessage(payloadMap: Map<string, string>, ws: WebSocket): SentMessage {
     this.lastMessageID++;
-    messageMap['messageID'] = this.lastMessageID;
-    const sentMessage: SentMessage = new SentMessage(messageMap);
-    const json: string = JSON.stringify(messageMap);
+    payloadMap['messageID'] = this.lastMessageID;
+    const sentMessage: SentMessage = new SentMessage(payloadMap);
+    const json: string = JSON.stringify(payloadMap);
+    console.log(`JSON that is going to be sent to the server: ${json}`);
     this.waitingList.set(this.lastMessageID, sentMessage);
     ws.send(json);
     return sentMessage;
@@ -107,7 +112,7 @@ class SentDestinations {
 
   getDestination(destination: string) {
     if (this.destinations.has(destination)) {
-      return this.destinations[destination];
+      return this.destinations.get(destination);
     } else {
       const destinationObj = new Destination();
       this.destinations.set(destination, destinationObj);
