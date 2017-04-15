@@ -30,7 +30,7 @@ export class ChateauTypeMessageComponent implements OnInit {
       // If a Ctrl and Enter buttons were pressed simultaneously.
       if (keyboardEvent.ctrlKey) {
         // Ctrl+Enter combination transforms into a next line symbol.
-        this.textarea = (this.textarea == null ? '\n' : this.textarea) + '\n';
+        this.textarea = this.textarea == null ? '\n' : (this.textarea + '\n');
       } else if (!keyboardEvent.shiftKey) {
         this.onSend();
         keyboardEvent.preventDefault();
