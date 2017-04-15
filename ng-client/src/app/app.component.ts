@@ -21,7 +21,7 @@ export class AppComponent {
    * @param message
    */
   onNewMessageTyped(message: string) {
-    this.messagingService.sendMessageFunction({});
+    this.messagingService.sendMessage('group-chat', {'content': message});
     this.chateauMessageHistoryComponent.drawNewMyMessageFunction({'content': message});
   }
 }
