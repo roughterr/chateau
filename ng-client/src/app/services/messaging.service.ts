@@ -29,12 +29,86 @@ export class MessagingService {
 
   constructor() {
     this.ws.onmessage = msg => {
-      console.log(`message received msg.data=${msg.data}`);
+      console.log(`message received. msg.data=${msg.data}`);
+      const messageMap = JSON.parse(msg.data);
+      const destination: string = messageMap[MessagingService.DESTINATION_PARAM_NAME];
+      if (destination == null || destination === '') {
+        console.log('Server sent a message without a destination.');
+        return;
+      }
+      // get a channel from the message
+      let channel = messageMap[MessagingService.CHANNEL_PARAM_NAME];
+      if (channel == null || channel === '') {
+        channel = 0;
+      }
+      let messageID = messageMap[MessagingService.MESSAGEID_PARAM_NAME];
+      if (messageID == null || messageID === '') {
+        messageID = 0;
+      }
+      // get a frame name
+      const frame = messageMap[MessagingService.FRAME_PARAM_NAME];
+      if (frame == null || frame === '') {
+        console.log('Server sent a message without a frame name.');
+        return;
+      }
+      if (frame === MessagingService.CLEANED_FRAME_NAME) {
+        const channelObj: Channel = this.sentDestinations.getDestination(destination).getChannelByIndex(channel);
+        channelObj.waitingList = new Map();
+        channelObj.slowpokePackages = [];
+        channelObj.lastMessageID = -1;
+      } else if (frame === MessagingService.NACK_FRAME_NAME) {// does nothing at the moment
+      } else if (frame === MessagingService.ACK_FRAME_NAME) {// message that is a response to a client's message.
+        const destinationObj: Destination = this.sentDestinations.getDestination(destination);
+        const channelObj = destinationObj.getChannelByIndex(channel);
+        const currentChannelObj = destinationObj.getCurrentChannel();
+        const messageObj = channelObj.waitingList.get(messageID);
+        // cleansing start.
+        messageMap[MessagingService.FRAME_PARAM_NAME] = null;
+        messageMap[MessagingService.MESSAGEID_PARAM_NAME] = null;
+        messageMap[MessagingService.CHANNEL_PARAM_NAME] = null;
+        messageMap[MessagingService.DESTINATION_PARAM_NAME] = null;
+        // cleansing end.
+        messageObj.markAsAcknowledged(messageMap);
+        channelObj.waitingList.delete(messageID);
+        const notCurrentChannel: Channel = destinationObj.getNotCurrentChannel();
+        const theOtherChannelIndex: number = Destination.getTheOtherChannelIndex(channel);
+        const theOtherChannelObj = destinationObj.getChannelByIndex(theOtherChannelIndex);
+        if (theOtherChannelObj.lastMessageID === -1) {
+          destinationObj.switchCurrentChannel();
+        }
+        // if the other channel already active and the current channel's waiting list is empty.
+        if (channel !== destinationObj.currentChannel && channelObj.waitingList.size === 0) {
+          this.requestChannelClean(destination, channel);
+        }
+        // clean the other channel if necessary
+        if (theOtherChannelObj.waitingList.size === 0 && theOtherChannelObj.lastMessageID > -1) {
+          this.requestChannelClean(destination, theOtherChannelIndex);
+        }
+      }
     };
   }
 
+  private requestChannelClean(destination: string, channelIndex: number) {
+    // get the channel object
+    const destinationObj: Destination = this.sentDestinations.getDestination(destination);
+    const channelObj = destinationObj.getCurrentChannel();
+    const cleanFrameMap = {};
+    cleanFrameMap[MessagingService.FRAME_PARAM_NAME] = MessagingService.CLEAN_FRAME_NAME;
+    cleanFrameMap[MessagingService.DESTINATION_PARAM_NAME] = destination;
+    cleanFrameMap[MessagingService.CHANNEL_PARAM_NAME] = channelIndex;
+    const messageObj: SentMessage = new SentMessage(cleanFrameMap);
+    setTimeout(function () {
+      // if some times passed and the map stills exists, then setting a flag that means that the client
+      // has been waiting an acknowledgment for a long time.
+      if (messageObj != null) {
+        channelObj.slowpokePackages.fill(messageObj);
+      }
+    }, 5000);
+    this.ws.send(JSON.stringify(cleanFrameMap));
+  }
+
   sendMessage(destination: string, data): SentMessage {
-    const destinationObj: Destination = this.sentDestinations.getDestination('');
+    const destinationObj: Destination = this.sentDestinations.getDestination(destination);
     const channelObj = destinationObj.getCurrentChannel();
     channelObj.lastMessageID++;
     data[MessagingService.FRAME_PARAM_NAME] = MessagingService.SEND_FRAME_NAME;
@@ -53,18 +127,18 @@ export class MessagingService {
 
 class SentMessage {
   data;
-  private acknowledgeEventEmitter: EventEmitter<Map<any, any>> = new EventEmitter();
+  private acknowledgeEventEmitter: EventEmitter<any> = new EventEmitter();
 
   constructor(data) {
     this.data = data;
   }
 
-  subscribeOnAcknowledge(subscriber: (responseBodyMap: Map<any, any>) => void) {
+  subscribeOnAcknowledge(subscriber: (responseB) => void) {
     this.acknowledgeEventEmitter.subscribe(subscriber);
   }
 
-  markAsAcknowledged(responseBodyMap: Map<any, any>) {
-    this.acknowledgeEventEmitter.next(responseBodyMap);
+  markAsAcknowledged(response) {
+    this.acknowledgeEventEmitter.next(response);
     this.acknowledgeEventEmitter.complete();
   }
 }
@@ -91,8 +165,39 @@ class Destination {
   /** ID of the current channel. Possible values are: 0, 1. */
   currentChannel = 0;
 
+  static getTheOtherChannelIndex(index: number): number {
+    return index === 0 ? 1 : 0;
+  }
+
   getCurrentChannel(): Channel {
     return this.currentChannel === 0 ? this.firstChannel : this.secondChannel;
+  }
+
+  setCurrentChannel(channel: Channel) {
+    if (this.currentChannel === 0) {
+      this.firstChannel = channel;
+    } else {
+      this.secondChannel = channel;
+    }
+  }
+
+  getNotCurrentChannelIndex() {
+    return this.currentChannel === 0 ? 1 : 0;
+  }
+
+  getNotCurrentChannel() {
+    return this.currentChannel === 0 ? this.secondChannel : this.firstChannel;
+  }
+
+  /**
+   * Switches the current channel to the other channel.
+   */
+  switchCurrentChannel() {
+    this.currentChannel = this.currentChannel === 0 ? 1 : 0;
+  }
+
+  getChannelByIndex(index: number) {
+    return index === 0 ? this.firstChannel : this.secondChannel;
   }
 }
 
