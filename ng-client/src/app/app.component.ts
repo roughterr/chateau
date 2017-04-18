@@ -1,6 +1,9 @@
 import {Component, ViewChild} from '@angular/core';
-import {ChateauMessageHistoryComponent} from './components/chateau-message-history/chateau-message-history.component';
-import {MessagingService} from './services/messaging.service';
+import {
+  ChateauMessageHistoryComponent,
+  MyNewMessageModelDecorator
+} from './components/chateau-message-history/chateau-message-history.component';
+import {MessagingService, SentMessage} from './services/messaging.service';
 
 @Component({
   selector: 'app-root',
@@ -14,14 +17,18 @@ export class AppComponent {
   @ViewChild(ChateauMessageHistoryComponent)
   private chateauMessageHistoryComponent: ChateauMessageHistoryComponent;
 
-  constructor(private messagingService: MessagingService) { }
+  constructor(private messagingService: MessagingService) {
+  }
 
   /**
    * This function should be called after the user has typed a new message.
    * @param message
    */
   onNewMessageTyped(message: string) {
-    this.messagingService.sendMessage('group-chat', {'content': message});
-    this.chateauMessageHistoryComponent.drawNewMyMessageFunction({'content': message});
+    const sentMessage: SentMessage = this.messagingService.sendMessage('group-chat', {'content': message});
+    const messsageDecorator: MyNewMessageModelDecorator = this.chateauMessageHistoryComponent.drawMyNewMessage(message);
+    sentMessage.subscribeOnAcknowledge(() => {
+      messsageDecorator.markAsDelivered('TO BE IMPLEMENTED.');
+    });
   }
 }

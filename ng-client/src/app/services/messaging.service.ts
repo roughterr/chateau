@@ -143,7 +143,7 @@ export class MessagingService {
   }
 }
 
-class SentMessage {
+export class SentMessage {
   data;
   private acknowledgeEventEmitter: EventEmitter<any> = new EventEmitter();
 
