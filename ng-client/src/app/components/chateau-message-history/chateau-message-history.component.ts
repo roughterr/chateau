@@ -1,10 +1,6 @@
 import {
-  Component, OnInit, ViewChild,
-  ViewContainerRef,
-  ComponentFactoryResolver,
-  ComponentRef, ElementRef
+  Component, OnInit
 } from '@angular/core';
-import {IconMessageDeliveryStatusComponent} from '../icon-message-delivery-status/icon-message-delivery-status.component';
 
 @Component({
   selector: 'app-chateau-message-history',
@@ -12,7 +8,7 @@ import {IconMessageDeliveryStatusComponent} from '../icon-message-delivery-statu
   styleUrls: ['./chateau-message-history.component.css']
 })
 export class ChateauMessageHistoryComponent implements OnInit {
-  private messages: MessageModel[] = [];
+  messages: MessageModel[] = [];
 
   constructor() {
   }
@@ -59,16 +55,6 @@ export class ChateauMessageHistoryComponent implements OnInit {
 
   ngOnInit() {
   }
-
-  /**
-   * Creates a node that contains text to be displayed on the web interface.
-   */
-  createTextNode = function (text) {
-    const textNode = document.createTextNode(text);
-    // TODO replace line breaks with <BR />
-    return textNode;
-  };
-
 }
 
 export class MessageModel {
@@ -87,12 +73,10 @@ export class MyNewMessageModelDecorator {
   private messageModel: MessageModel;
 
   constructor(messageModel: MessageModel) {
-    console.log(`constructor. messageModel=${messageModel}`);
     this.messageModel = messageModel;
   }
 
   markAsDelivered(date: string) {
-    console.log(`setDate. messageModel=${this.messageModel}`);
     const messageModel: MessageModel = this.messageModel;
     messageModel.date = date;
     messageModel.isDelivered = true;
