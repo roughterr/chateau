@@ -43,7 +43,7 @@ export class MessagingService {
   }
 
   private openWebSocket() {
-    const ws = new WebSocket('ws://localhost:8080/hello/');
+    const ws = new WebSocket('ws://' + location.host + '/hello/');
     ws.onerror = () => ws.close();
     ws.onclose = () => {
       setTimeout(this.openWebSocket, 20000);
