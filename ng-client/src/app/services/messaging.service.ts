@@ -1,4 +1,5 @@
-import {EventEmitter, Injectable} from '@angular/core';
+import {EventEmitter, Injectable, Output} from '@angular/core';
+import {Observable} from 'rxjs/Observable';
 
 @Injectable()
 export class MessagingService {
@@ -26,9 +27,29 @@ export class MessagingService {
    */
   private ws: WebSocket = new WebSocket('ws://localhost:8080/hello/');
   private sentDestinations: SentDestinations = new SentDestinations();
+  private receivedDestinations: ReceivedDestinations = new ReceivedDestinations();
 
   constructor() {
-    this.ws.onmessage = msg => {
+    this.openWebSocket();
+    const destinations = this.sentDestinations.destinations;
+    const retrySendFunction = function () {
+      destinations.forEach(sentDestination => {
+        sentDestination.firstChannel.waitingList.forEach(sentMessage => sentMessage.send());
+        sentDestination.secondChannel.waitingList.forEach(sentMessage => sentMessage.send());
+      });
+      setTimeout(retrySendFunction, 50000);
+    };
+    setTimeout(retrySendFunction, 10000);
+  }
+
+  private openWebSocket() {
+    const ws = new WebSocket('ws://localhost:8080/hello/');
+    ws.onerror = () => ws.close();
+    ws.onclose = () => {
+      setTimeout(this.openWebSocket, 20000);
+    }; // every 20 seconds
+    this.ws = ws;
+    ws.onmessage = msg => {
       console.log(`message received. data=${msg.data}`);
       const messageMap = JSON.parse(msg.data);
       // get a frame type
@@ -52,13 +73,14 @@ export class MessagingService {
         messageID = 0;
       }
       // cleansing start.
-      messageMap[MessagingService.FRAME_PARAM_NAME] = null;
-      messageMap[MessagingService.MESSAGEID_PARAM_NAME] = null;
-      messageMap[MessagingService.CHANNEL_PARAM_NAME] = null;
-      messageMap[MessagingService.DESTINATION_PARAM_NAME] = null;
+      delete messageMap[MessagingService.FRAME_PARAM_NAME];
+      delete messageMap[MessagingService.MESSAGEID_PARAM_NAME];
+      delete messageMap[MessagingService.CHANNEL_PARAM_NAME];
+      delete messageMap[MessagingService.DESTINATION_PARAM_NAME];
       // cleansing end.
       this.processFrame(frameType, destination, channelIndex, messageID, messageMap);
     };
+    return ws;
   }
 
   /**
@@ -72,14 +94,14 @@ export class MessagingService {
   private processFrame(frameType: string, destination: string, channelIndex: number, messageID: number, messageMap) {
     if (frameType === MessagingService.CLEANED_FRAME_NAME) {
       const channelObj: SentChannel = this.sentDestinations.getDestination(destination).getChannelByIndex(channelIndex);
-      channelObj.waitingList = new Map();
-      channelObj.slowpokePackages = [];
-      channelObj.lastMessageID = -1;
+      if (channelObj.cleanChannelMessage !== null) {
+        channelObj.cleanChannelMessage.markAsAcknowledged({});
+      }
     } else if (frameType === MessagingService.NACK_FRAME_NAME) {// does nothing at the moment
     } else if (frameType === MessagingService.ACK_FRAME_NAME) {// message that is a response to a client's message.
       const destinationObj: SentDestination = this.sentDestinations.getDestination(destination);
-      const channelObj = destinationObj.getChannelByIndex(channelIndex);
-      const messageObj = channelObj.waitingList.get(messageID);
+      const channelObj: SentChannel = destinationObj.getChannelByIndex(channelIndex);
+      const messageObj: SentMessage = channelObj.waitingList.get(messageID);
       messageObj.markAsAcknowledged(messageMap);
       channelObj.waitingList.delete(messageID);
       const theOtherChannelIndex: number = SentDestination.getTheOtherChannelIndex(channelIndex);
@@ -95,6 +117,25 @@ export class MessagingService {
       if (theOtherChannelObj.waitingList.size === 0 && theOtherChannelObj.lastMessageID > -1) {
         this.requestChannelClean(destination, theOtherChannelIndex);
       }
+    } else if (frameType === MessagingService.SEND_FRAME_NAME || frameType === MessagingService.CLEAN_FRAME_NAME) {// server messages
+      const receivedDestination: ReceivedDestination = this.receivedDestinations.getDestination(destination);
+      const answerFrameMap = {};
+      answerFrameMap[MessagingService.DESTINATION_PARAM_NAME] = destination;
+      answerFrameMap[MessagingService.CHANNEL_PARAM_NAME] = channelIndex;
+      if (frameType === MessagingService.SEND_FRAME_NAME) {
+        const updateLastMessageResult: boolean = receivedDestination.registerFrame(channelIndex, messageID);
+        if (updateLastMessageResult) {
+          answerFrameMap[MessagingService.FRAME_PARAM_NAME] = MessagingService.ACK_FRAME_NAME;
+          receivedDestination.incomingMessageEventEmitter.emit(messageMap);
+        } else {
+          answerFrameMap[MessagingService.FRAME_PARAM_NAME] = MessagingService.NACK_FRAME_NAME;
+        }
+        answerFrameMap[MessagingService.MESSAGEID_PARAM_NAME] = messageID;
+      } else if (frameType === MessagingService.CLEAN_FRAME_NAME) {
+        answerFrameMap[MessagingService.FRAME_PARAM_NAME] = MessagingService.CLEANED_FRAME_NAME;
+        receivedDestination.cleanChannel(channelIndex);
+      }
+      this.sendFrame(answerFrameMap);
     }
   }
 
@@ -116,39 +157,73 @@ export class MessagingService {
     cleanFrameMap[MessagingService.FRAME_PARAM_NAME] = MessagingService.CLEAN_FRAME_NAME;
     cleanFrameMap[MessagingService.DESTINATION_PARAM_NAME] = destination;
     cleanFrameMap[MessagingService.CHANNEL_PARAM_NAME] = channelIndex;
-    const messageObj: SentMessage = new SentMessage(cleanFrameMap);
-    setTimeout(function () {
-      // if some times passed and the map stills exists, then setting a flag that means that the client
-      // has been waiting an acknowledgment for a long time.
-      if (messageObj != null) {
-        channelObj.slowpokePackages.fill(messageObj);
+    const messageObj: SentMessage = new SentMessage(() => {
+      this.sendFrame(cleanFrameMap);
+    }, () => {
+      channelObj.slowpokePackages.fill(cleanFrameMap);
+    }, () => {
+      const index: number = channelObj.slowpokePackages.indexOf(cleanFrameMap);
+      if (index !== -1) {
+        channelObj.slowpokePackages.splice(index, 1);
       }
-    }, 5000);
-    this.sendFrame(cleanFrameMap);
+    });
+    channelObj.cleanChannelMessage = messageObj;
+    messageObj.subscribeOnAcknowledge(() => {
+      channelObj.waitingList = new Map();
+      channelObj.slowpokePackages = [];
+      channelObj.lastMessageID = -1;
+    });
+    messageObj.send();
   }
 
   sendMessage(destination: string, data): SentMessage {
     const destinationObj: SentDestination = this.sentDestinations.getDestination(destination);
     const channelObj = destinationObj.getCurrentChannel();
     channelObj.lastMessageID++;
+    const messageID: number = channelObj.lastMessageID;
     data[MessagingService.FRAME_PARAM_NAME] = MessagingService.SEND_FRAME_NAME;
     data[MessagingService.CHANNEL_PARAM_NAME] = destinationObj.currentChannel;
     data[MessagingService.DESTINATION_PARAM_NAME] = destination;
-    data[MessagingService.MESSAGEID_PARAM_NAME] = channelObj.lastMessageID;
-    const sentMessage: SentMessage = new SentMessage(data);
-    channelObj.waitingList.set(channelObj.lastMessageID, sentMessage);
-    this.sendFrame(data);
+    data[MessagingService.MESSAGEID_PARAM_NAME] = messageID;
+    const sentMessage: SentMessage = new SentMessage(() => {
+      this.sendFrame(data);
+    }, () => {
+      channelObj.slowpokePackages.fill(data);
+    }, () => {
+      const index: number = channelObj.slowpokePackages.indexOf(data);
+      if (index !== -1) {
+        channelObj.slowpokePackages.splice(index, 1);
+      }
+    });
+    channelObj.waitingList.set(messageID, sentMessage);
+    sentMessage.send();
     return sentMessage;
-    // TODO timeout and add an item slowpokePackages
+  }
+
+  /**
+   * Returns a subscription to received messages to a destination.
+   * @param destination
+   */
+  subscribeToDestination(destination: string): Observable<any> {
+    return this.receivedDestinations.getDestination(destination).incomingMessageEventEmitter;
   }
 }
 
 export class SentMessage {
-  data;
+  /** Indicates whether the message has been added to the slow messages list. */
+  private wasAddedToSlowList = false;
   private acknowledgeEventEmitter: EventEmitter<any> = new EventEmitter();
 
-  constructor(data) {
-    this.data = data;
+  /**
+   *
+   * @param sendCommand sends the message to the server
+   * @param addToSlowListCommand adds the message to the slow messages list, which is a list of the messages that have been sent a long ago
+   * and haven't been acknowledged by the server
+   * @param removeFromSlowListCommand removes the message from the slow messages list messages
+   */
+  constructor(private sendCommand: () => void,
+              private addToSlowListCommand: () => void,
+              private removeFromSlowListCommand: () => void) {
   }
 
   subscribeOnAcknowledge(subscriber: (responseB) => void) {
@@ -156,8 +231,23 @@ export class SentMessage {
   }
 
   markAsAcknowledged(response) {
+    if (this.wasAddedToSlowList) {
+      this.removeFromSlowListCommand();
+    }
+    this.addToSlowListCommand = null;
     this.acknowledgeEventEmitter.next(response);
     this.acknowledgeEventEmitter.complete();
+  }
+
+  send(): void {
+    const addToSlowListCommand = this.addToSlowListCommand;
+    setTimeout(function () { // if the map still contains the message for too long, then add it to the special list
+      if (addToSlowListCommand != null) {
+        addToSlowListCommand();
+        this.wasAddedToSlowList = true;
+      }
+    }, 5000);
+    this.sendCommand();
   }
 }
 
@@ -167,10 +257,15 @@ export class SentMessage {
 class SentChannel {
   waitingList: Map<number, SentMessage> = new Map();
   /**
+   * If a request to clean the channel has been sent, this object must be not null.
+   * @type {any}
+   */
+  cleanChannelMessage: SentMessage = null;
+  /**
    * List of packages that we are supposed to have already received acknowledgement about.
    * @type {Array}
    */
-  slowpokePackages: SentMessage[] = [];
+  slowpokePackages: any[] = [];
   /**
    * ID of the last message in the channel.
    * @type {number}
@@ -204,7 +299,7 @@ class SentDestination {
     this.currentChannel = this.currentChannel === 0 ? 1 : 0;
   }
 
-  getChannelByIndex(index: number) {
+  getChannelByIndex(index: number): SentChannel {
     return index === 0 ? this.firstChannel : this.secondChannel;
   }
 }
@@ -229,4 +324,66 @@ class SentDestinations {
   }
 }
 
+/**
+ * Contains data about received frames to a destination.
+ */
+class ReceivedDestination {
+  private firstChannelLastMessageID: number = -1;
+  private secondChannelLastMessageID: number = -1;
+  /** Gives a sign about an incoming message. */
+  @Output()
+  incomingMessageEventEmitter: EventEmitter<any> = new EventEmitter<any>();
 
+  /**
+   * Registers a new incoming frame.
+   * @param destination
+   * @param channelIndex
+   * @param messageID
+   * @return {boolean} true - registration was successful
+   */
+  registerFrame(channelIndex: number, messageID: number): boolean {
+    if (messageID < 0) {
+      return false;
+    }
+    if (channelIndex === 0) {
+      if (this.firstChannelLastMessageID + 1 === messageID) {
+        this.firstChannelLastMessageID++;
+        return true;
+      }
+    } else if (channelIndex === 1) {
+      if (this.secondChannelLastMessageID + 1 === messageID) {
+        this.secondChannelLastMessageID++;
+        return true;
+      }
+    }
+    return false;
+  }
+
+  cleanChannel(channelIndex: number) {
+    if (channelIndex === 0) {
+      this.firstChannelLastMessageID = -1;
+    } else if (channelIndex === 1) {
+      this.secondChannelLastMessageID = -1;
+    }
+  }
+}
+
+/**
+ * Contains data about received frames to a destinations.
+ */
+class ReceivedDestinations {
+  /**
+   * Map, where the key is a destination and value is data of the destination.
+   */
+  private destinations: Map<string, ReceivedDestination> = new Map();
+
+  getDestination(destination: string): ReceivedDestination {
+    if (this.destinations.has(destination)) {
+      return this.destinations.get(destination);
+    } else {
+      const destinationObj = new ReceivedDestination();
+      this.destinations.set(destination, destinationObj);
+      return destinationObj;
+    }
+  }
+}
