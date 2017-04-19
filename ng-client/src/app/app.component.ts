@@ -18,6 +18,9 @@ export class AppComponent {
   private chateauMessageHistoryComponent: ChateauMessageHistoryComponent;
 
   constructor(private messagingService: MessagingService) {
+    messagingService.subscribeToDestination('group-chat').subscribe(data => {
+      this.chateauMessageHistoryComponent.drawOthersMessage(data);
+    });
   }
 
   /**

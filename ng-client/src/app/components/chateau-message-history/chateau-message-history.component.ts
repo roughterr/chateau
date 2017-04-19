@@ -22,6 +22,15 @@ export class ChateauMessageHistoryComponent implements OnInit {
     return messageModelDecorator;
   }
 
+  drawOthersMessage(data) {
+    const messageModel: MessageModel = new MessageModel();
+    messageModel.content = data.content;
+    messageModel.isMyMessage = false;
+    messageModel.date = data.date;
+    messageModel.author = data.senderUserID;
+    this.messages.push(messageModel);
+  }
+
   // // const ulElement = document.querySelector('#messageslist');
   // const li = document.createElement('li');
   // const textDiv = document.createElement('div');
