@@ -1,11 +1,7 @@
-<div *ngFor="let message of messages">
-  <span>{{message.content}}</span>
-  <span *ngIf="message.isMyMessage" title="delievered at {{message.date}}">
-    <span *ngIf="!message.isNew && message.isDelivered">{{message.date}}</span>
-    <app-icon-message-delivery-status *ngIf="message.isNew"
-                                      [delivered]="message.isDelivered"></app-icon-message-delivery-status>
-  </span>
-  <span *ngIf="!message.isMyMessage">
-    <span>{{message.date}}</span>
-  </span>
+<div *ngFor="let message of messages" class="message">
+  <div class="first-square">{{message.author}}<br/>{{message.date}}</div>
+  <div>
+    <div *ngIf="message.isMyMessage" class="my-message-text-div message-body">{{message.content}}</div>
+    <div *ngIf="!message.isMyMessage" class="alien-message-text-div message-body">{{message.content}}</div>
+  </div>
 </div>

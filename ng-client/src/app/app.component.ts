@@ -31,7 +31,7 @@ export class AppComponent {
     const sentMessage: SentMessage = this.messagingService.sendMessage('group-chat', {'content': message});
     const messsageDecorator: MyNewMessageModelDecorator = this.chateauMessageHistoryComponent.drawMyNewMessage(message);
     sentMessage.subscribeOnAcknowledge(() => {
-      messsageDecorator.markAsDelivered('TO BE IMPLEMENTED.');
+      messsageDecorator.markAsDelivered('Sent ✔');
     });
   }
 }
