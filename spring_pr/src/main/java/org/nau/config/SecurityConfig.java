@@ -1,5 +1,7 @@
 package org.nau.config;
 
+import org.nau.database.UserDao;
+import org.nau.database.model.User;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -10,10 +12,14 @@ import org.springframework.security.config.annotation.web.configuration.EnableWe
 import org.springframework.security.config.annotation.web.configuration.WebSecurityConfigurerAdapter;
 import org.springframework.security.core.session.SessionRegistry;
 import org.springframework.security.core.session.SessionRegistryImpl;
+import java.util.List;
 
 @Configuration
 @EnableWebSecurity
 public class SecurityConfig extends WebSecurityConfigurerAdapter {
+    @Autowired
+    private UserDao userDao;
+
     /**
      * Sets the database of users.
      *
@@ -22,9 +28,10 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
      */
     @Autowired
     public void configureGlobal(AuthenticationManagerBuilder auth) throws Exception {
-        auth.inMemoryAuthentication().withUser("ian").password("ian").roles("USER");
-        auth.inMemoryAuthentication().withUser("dan").password("dan").roles("USER");
-        auth.inMemoryAuthentication().withUser("chris").password("chris").roles("USER");
+        List<User> users = userDao.getAllUsers();
+        for (User user: users) {
+            auth.inMemoryAuthentication().withUser(user.getUsername()).password(user.getPassword()).roles("USER");
+        }
     }
 
     @Override
