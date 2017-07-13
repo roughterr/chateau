@@ -2,4 +2,5 @@
   {{title}}
 </h1>
 <app-chateau-message-history></app-chateau-message-history>
-<app-chateau-type-message (typedMessagesEventEmitter)="onNewMessageTyped($event)"></app-chateau-type-message>
+<app-chateau-type-message id="type-message"
+                          (typedMessagesEventEmitter)="onNewMessageTyped($event)"></app-chateau-type-message>
