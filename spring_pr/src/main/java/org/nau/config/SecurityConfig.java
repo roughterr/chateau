@@ -18,21 +18,7 @@ import java.util.List;
 @EnableWebSecurity
 public class SecurityConfig extends WebSecurityConfigurerAdapter {
     @Autowired
-    private UserDao userDao;
-
-    /**
-     * Sets the database of users.
-     *
-     * @param auth
-     * @throws Exception
-     */
-    @Autowired
-    public void configureGlobal(AuthenticationManagerBuilder auth) throws Exception {
-        List<User> users = userDao.getAllUsers();
-        for (User user: users) {
-            auth.inMemoryAuthentication().withUser(user.getUsername()).password(user.getPassword()).roles("USER");
-        }
-    }
+    private NauUserDetailService nauUserDetailService;
 
     @Override
     protected void configure(HttpSecurity http) throws Exception {
@@ -66,8 +52,9 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
         return new SessionRegistryImpl();
     }
 
-//    @Bean
-//    public ServletListenerRegistrationBean<HttpSessionEventPublisher> httpSessionEventPublisher() {
-//        return new ServletListenerRegistrationBean<HttpSessionEventPublisher>(new HttpSessionEventPublisher());
-//    }
+    @Override
+    public void configure(AuthenticationManagerBuilder builder)
+            throws Exception {
+        builder.userDetailsService(nauUserDetailService);
+    }
 }
