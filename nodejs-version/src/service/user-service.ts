@@ -1,7 +1,7 @@
 const users = new Map<string, string>([
     ["ian", "ian"],
     ["dan", "dan"],
-    ["chris", "chris"]
+    ["chris", "chris"],
 ]);
 
 export class UserService {
