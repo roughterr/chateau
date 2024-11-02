@@ -14,6 +14,8 @@ ws.on("message", (message: string) => {
     console.log(`Received message from server: ${message}`);
     if (message == "authentication successful") {
         const message: any = new Object();
+        // set current time. For example, 1730572330235
+        message.salt = Date.now();
         message.content = "hi dan";
         message.address = "dan";
         ws.send(JSON.stringify(message));
