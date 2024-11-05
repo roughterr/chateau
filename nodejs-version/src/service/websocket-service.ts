@@ -16,13 +16,10 @@ export class WebsocketService {
      * Handles WebSocket messages.
      */
     public onMessage(parsedMessage): void {
-        // parsing is complete at this point
         if (this.authenticated) {
             this.handleAuthenticated(this.currentUserLogin, parsedMessage);
         } else {
             const aData: AuthenticationData = parsedMessage;
-            // const login = parsedJson.login;
-            // const password = parsedJson.password;
             if (aData.login &&
                 aData.password &&
                 this.userService.areCredentialsCorrect(aData.login, aData.password)) {
@@ -41,7 +38,10 @@ export class WebsocketService {
     }
 }
 
-interface AuthenticationData {
+/**
+ * Represents data format for an authentication message sent by a WebSocket channel.
+ */
+export interface AuthenticationData {
     login: string;
     password: string;
 }
@@ -49,7 +49,7 @@ interface AuthenticationData {
 /**
  * Represent a data structure that represents a message that a user sends to another user.
  */
-class IncomingMessage {
+export class IncomingMessage {
     /**
      * Some data that are meaningful only to the sender - not to the receiver.
      * For example, it can be a date when the client sent the message.
@@ -59,7 +59,7 @@ class IncomingMessage {
     /**
      * Salt of the previous message. If all the previous message are acknowlegled by the client, it will probably not put anything here.
      */
-    previousMessageSalt: string;
+    previousMessageSalt?: string;
     /**
      * The content of the message.
      */
