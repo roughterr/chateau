@@ -13,27 +13,24 @@ export class WebsocketService {
     }
 
     /**
-     * Handles websocker messages
+     * Handles WebSocket messages.
      */
-    public onMessage(parsedJson): void {
-        console.log(`Received parsedJson: ${parsedJson}`);
+    public onMessage(parsedMessage): void {
         // parsing is complete at this point
         if (this.authenticated) {
-            this.handleAuthenticated(this.currentUserLogin, parsedJson);
+            this.handleAuthenticated(this.currentUserLogin, parsedMessage);
         } else {
-            const login = parsedJson.login;
-            const password = parsedJson.password;
-            if (login &&
-                password &&
-                this.userService.areCredentialsCorrect(login, password)
-            ) {
+            const aData: AuthenticationData = parsedMessage;
+            // const login = parsedJson.login;
+            // const password = parsedJson.password;
+            if (aData.login &&
+                aData.password &&
+                this.userService.areCredentialsCorrect(aData.login, aData.password)) {
                 this.authenticated = true;
-                this.currentUserLogin = login;
+                this.currentUserLogin = aData.login;
                 this.ws.send("authentication successful");
             } else {
-                this.ws.send(
-                    "provide correct login and password for authentication"
-                );
+                this.ws.send("provide correct login and password for authentication");
                 this.ws.close;
             }
         }
@@ -42,6 +39,11 @@ export class WebsocketService {
     private handleAuthenticated(currentUserLogin: string, message: any): number {
         return new Date().getTime();
     }
+}
+
+interface AuthenticationData {
+    login: string;
+    password: string;
 }
 
 /**

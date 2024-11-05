@@ -1,7 +1,7 @@
 import express from "express";
 import * as WebSocket from "ws";
 import { WebsocketService } from "./service/websocket-service";
-import bodyParser from 'body-parser'
+import bodyParser from "body-parser";
 
 const port = 8080;
 const app = express();
@@ -13,8 +13,8 @@ app.use(express.urlencoded({ extended: true }));
 app.use(express.static("public"));
 
 // for HTTP
-app.use(bodyParser.json({ limit: "100mb" }))
-app.use(bodyParser.urlencoded({ limit: "50mb", extended: true }))
+app.use(bodyParser.json({ limit: "100mb" }));
+app.use(bodyParser.urlencoded({ limit: "50mb", extended: true }));
 
 // Configure routesroutes.register(app);
 // start the express server
