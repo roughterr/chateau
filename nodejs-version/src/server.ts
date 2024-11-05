@@ -2,16 +2,21 @@ import express from "express";
 import events from "events";
 import * as WebSocket from "ws";
 import { UserService } from "./service/user-service";
+import bodyParser from 'body-parser'
 
 const port = 8080;
 const app = express();
 const messageEventEmitter = new events.EventEmitter();
 
-// without this the request body will appear empty
+// without this the request body in Websocket will appear empty
 app.use(express.urlencoded({ extended: true }));
 
 // make content of folder "public" available in the browser
 app.use(express.static("public"));
+
+// for HTTP
+app.use(bodyParser.json({limit: "100mb"}))
+app.use(bodyParser.urlencoded({limit:"50mb", extended: true}))
 
 app.get("/messages", (req, res) => {
     console.log(`Waiting for new message...`);
@@ -22,9 +27,9 @@ app.get("/messages", (req, res) => {
 });
 
 app.post("/new-message", (req, res) => {
-    const { from, message } = req.body;
-    console.log(`New Message - from: ${from} - message: ${message}`);
-    messageEventEmitter.emit("newMessage", from, message);
+    const incomingMessage: IncomingMessage = req.body;
+    console.log(`New Message - salt=${incomingMessage.salt}`);
+    messageEventEmitter.emit("newMessage");
     res.send({ ok: true, description: "Message Sent!" });
 });
 
@@ -91,9 +96,15 @@ class IncomingMessage {
      * For example, it can be a date when the client sent the message.
      * Let's say it shouldn't be longer than 60 symbols.
      */
-    private salt: string;
-    private previousMessageSalt;
-    private content: boolean;
+    salt: string;
+    /**
+     * Salt of the previous message. If all the previous message are acknowlegled by the client, it will probably not put anything here.
+     */
+    previousMessageSalt;
+    /**
+     * The content of the message.
+     */
+    content: string;
 }
 
 function handleAuthenticated(currentUserLogin: string, message: any): number {
