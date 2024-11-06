@@ -1,6 +1,6 @@
 import express from "express";
 import * as WebSocket from "ws";
-import { WebsocketService } from "./service/websocket-service";
+import { wsHandler } from "./service/websocket-service";
 import bodyParser from "body-parser";
 
 const port = 8080;
@@ -25,18 +25,7 @@ const httpServer = app.listen(port, () => {
 
 const wsServer = new WebSocket.Server({ noServer: true });
 
-wsServer.on("connection", (ws: WebSocket) => {
-    console.log("New client connected");
-    const websocketService = new WebsocketService(ws);
-    // listening to new messages
-    ws.on("message", (messageStr: string) => {
-        websocketService.onMessage(JSON.parse(messageStr));
-    });
-
-    ws.on("close", () => {
-        console.log("Client disconnected");
-    });
-});
+wsServer.on("connection", wsHandler);
 
 httpServer.on("upgrade", (req, socket, head) => {
     wsServer.handleUpgrade(req, socket, head, (ws) => {

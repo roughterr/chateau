@@ -1,7 +1,7 @@
 import { UserService } from "./user-service";
 import { WebSocket } from "ws";
 
-export class WebsocketService {
+class WebsocketService {
     // whether the user has authenticated
     private authenticated: boolean = false;
     // makes sense ony when "authenticated" is true
@@ -34,6 +34,7 @@ export class WebsocketService {
     }
 
     private handleAuthenticated(currentUserLogin: string, message: any): number {
+
         return new Date().getTime();
     }
 }
@@ -49,7 +50,7 @@ export interface AuthenticationData {
 /**
  * Represent a data structure that represents a message that a user sends to another user.
  */
-export class IncomingMessage {
+export interface IncomingMessage {
     /**
      * Some data that are meaningful only to the sender - not to the receiver.
      * For example, it can be a date when the client sent the message.
@@ -64,4 +65,17 @@ export class IncomingMessage {
      * The content of the message.
      */
     content: string;
+}
+
+export function wsHandler(ws: WebSocket) {
+    console.log("New client connected");
+    const websocketService = new WebsocketService(ws);
+    // listening to new messages
+    ws.on("message", (messageStr: string) => {
+        websocketService.onMessage(JSON.parse(messageStr));
+    });
+
+    ws.on("close", () => {
+        console.log("Client disconnected");
+    });
 }
