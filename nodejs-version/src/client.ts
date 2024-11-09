@@ -1,6 +1,7 @@
 import * as WebSocket from "ws";
+import { AuthenticationData } from "./service/authentication-handler";
+import { NewMessage } from "./service/new-message-handler";
 const ws = new WebSocket.WebSocket("ws://localhost:8080");
-import {AuthenticationData, NewMessage} from "./service/websocket-service";
 
 ws.on("open", () => {
     console.log("Connected to server");
