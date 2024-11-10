@@ -1,26 +1,29 @@
-import { WsConnectionContext } from "./ws-connection-context";
-import { MessageHandler} from "./message-handler";
+import { ConnectionContext } from "../contexts/connection-context";
+import { ServerContext } from "../contexts/server-context";
+import { MessageHandler } from "./message-handler";
 import { Subject } from "./subject";
 
 export class AuthenticationHandler implements MessageHandler {
-    handleMessage(context: WsConnectionContext, parsedMessage: any): void {
+    handleMessage(serverContext: ServerContext,
+        connectionContext: ConnectionContext,
+        parsedMessage: any): void {
         const aData: AuthenticationData = parsedMessage;
         if (
             aData.login &&
             aData.password &&
-            context.userService.areCredentialsCorrect(
+            connectionContext.userService.areCredentialsCorrect(
                 aData.login,
                 aData.password
             )
         ) {
-            context.authenticated = true;
-            context.currentUserLogin = aData.login;
-            context.ws.send("authentication successful");
+            connectionContext.authenticated = true;
+            connectionContext.currentUserLogin = aData.login;
+            connectionContext.sendStringToServer("authentication successful");
         } else {
-            context.ws.send(
+            connectionContext.sendStringToServer(
                 "provide correct login and password for authentication"
             );
-            context.ws.close;
+            connectionContext.closeConnection();
         }
     }
 }

@@ -1,9 +1,10 @@
-import { WsConnectionContext } from "./ws-connection-context";
-import { AuthenticationHandler} from "./authentication-handler";
+import { ConnectionContext } from "../contexts/connection-context";
+import { ServerContext } from "../contexts/server-context";
+import { AuthenticationHandler } from "./authentication-handler";
 import { NewMessageHandler } from "./new-message-handler";
 
 export interface MessageHandler {
-    handleMessage(context: WsConnectionContext, parsedMessage: any): void;
+    handleMessage(serverContext: ServerContext, connectionContext: ConnectionContext, parsedMessage: any): void;
 }
 
 export const subjectHandlerMap = new Map<string, MessageHandler>([

@@ -1,9 +1,12 @@
+import { ConnectionContext } from "../contexts/connection-context";
+import { ServerContext } from "../contexts/server-context";
 import { MessageHandler } from "./message-handler";
 import { Subject } from "./subject";
-import { WsConnectionContext } from "./ws-connection-context";
 
 export class NewMessageHandler implements MessageHandler {
-    handleMessage(context: WsConnectionContext, parsedMessage: any): void {
+    handleMessage(serverContext: ServerContext,
+        connectionContext: ConnectionContext,
+        parsedMessage: any): void {
         const newMessage: NewMessage = parsedMessage;
         console.log(`new message: ${newMessage}`);
         //TODO
