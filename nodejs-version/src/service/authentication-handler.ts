@@ -11,7 +11,7 @@ export class AuthenticationHandler implements MessageHandler {
         if (
             aData.login &&
             aData.password &&
-            connectionContext.userService.areCredentialsCorrect(
+            serverContext.getUserService().areCredentialsCorrect(
                 aData.login,
                 aData.password
             )

@@ -13,10 +13,7 @@ export class ConnectionContext {
      * makes sense ony when "authenticated" is true
      */
     currentUserLogin: string;
-    /**
-     * Service class to work with users authentication.
-     */
-    userService = new UserService();
+
     /**
      * The WebSocket connection object.
      */
