@@ -2,27 +2,20 @@ import { ConnectionContext } from "../contexts/connection-context";
 import { ServerContext } from "../contexts/server-context";
 import { MessageHandler } from "./message-handler";
 import { Subject } from "./subject";
+import { WebSocket } from "ws";
 
 export class AuthenticationHandler implements MessageHandler {
-    handleMessage(serverContext: ServerContext,
-        connectionContext: ConnectionContext,
-        parsedMessage: any): void {
+    handleMessage(serverContext: ServerContext, connectionContext: ConnectionContext, parsedMessage: any): void {
         const aData: AuthenticationData = parsedMessage;
         if (
             aData.login &&
             aData.password &&
-            serverContext.getUserService().areCredentialsCorrect(
-                aData.login,
-                aData.password
-            )
+            serverContext.getUserService().areCredentialsCorrect(aData.login, aData.password)
         ) {
-            connectionContext.authenticated = true;
-            connectionContext.currentUserLogin = aData.login;
-            connectionContext.sendStringToServer("authentication successful");
+            connectionContext.authenticateUser(aData.login);
+            connectionContext.sendStringToUser("authentication successful");
         } else {
-            connectionContext.sendStringToServer(
-                "provide correct login and password for authentication"
-            );
+            connectionContext.sendStringToUser("provide correct login and password for authentication");
             connectionContext.closeConnection();
         }
     }

@@ -6,6 +6,7 @@ import { ServerContext } from "./contexts/server-context";
 import { AuthenticationHandler } from "./service/authentication-handler";
 import { NewMessageHandler } from "./service/new-message-handler";
 import { MessageHandler } from "./service/message-handler";
+import { Subject } from "./service/subject";
 
 const port = 8080;
 const app = express();
@@ -37,13 +38,12 @@ export const subjectHandlerMap = new Map<string, MessageHandler>([
 
 wsServer.on("connection", function(ws: WebSocket) {
     console.log("New client connected");
-    const connectionContext = new ConnectionContext(ws);
+    const connectionContext = new ConnectionContext(serverContext, ws);
     // listening to new messages
     ws.on("message", (messageStr: string) => {
         console.log(`the raw message string is "${messageStr}"`);
-        const parsedMessage = JSON.parse(messageStr);
-        const subject: string = parsedMessage.subject;
-        const handler: MessageHandler = subjectHandlerMap.get(subject);
+        const parsedMessage: Subject = JSON.parse(messageStr);
+        const handler: MessageHandler = subjectHandlerMap.get(parsedMessage.subject);
         handler.handleMessage(serverContext, connectionContext, parsedMessage);
     });
 
