@@ -4,11 +4,10 @@ import { MessageHandler } from "./message-handler";
 import { Subject } from "./subject";
 
 export class NewMessageHandler implements MessageHandler {
-    handleMessage(serverContext: ServerContext,
-        connectionContext: ConnectionContext,
-        parsedMessage: any): void {
+    handleMessage(serverContext: ServerContext, connectionContext: ConnectionContext, parsedMessage: any): void {
         const newMessage: NewMessage = parsedMessage;
         console.log(`new message: ${newMessage}`);
+        serverContext.sendJsonToUser(newMessage.address, newMessage.content);
         //TODO
     }
 }
@@ -31,4 +30,8 @@ export interface NewMessage extends Subject {
      * The content of the message.
      */
     content: string;
+    /**
+     * User id that the message is addressed to. Empty means a messsage addressed to everyone.
+     */
+    address?: string;
 }

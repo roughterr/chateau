@@ -6,6 +6,6 @@
     "esModuleInterop": true,
     "moduleResolution": "Node16"
   },
-  "include": ["src/*.ts"],
+  "include": ["src/*.ts", "src/test/ian-test.ts"],
   "exclude": ["node_modules"]
 }

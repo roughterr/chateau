@@ -30,7 +30,23 @@ export class ServerContext {
         }
         // JSON.stringify won't work on a Map
         for (let [login, sessions] of this.connectedUsers) {
-            console.log(`There is a connected user with login: ${login} and number of open sessions: ${sessions.length}`);
+            console.log(
+                `There is a connected user with login: ${login} and number of open sessions: ${sessions.length}`
+            );
         }
+    }
+
+    /**
+     * Sends a message to all active user sessions.
+     * @param login
+     */
+    public sendStringToUser(login: string, message: string): void {
+        this.connectedUsers.get(login)?.forEach((ws) => {
+            ws.send(message);
+        });
+    }
+
+    public sendJsonToUser(login: string, message: any): void {
+        this.sendStringToUser(login, JSON.stringify(message));
     }
 }
