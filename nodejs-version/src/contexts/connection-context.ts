@@ -20,7 +20,7 @@ export class ConnectionContext {
     /**
      * makes sense ony when "authenticated" is true
      */
-    private currentUserLogin: string;
+    private currentUserLogin!: string;
 
     constructor(serverContext: ServerContext, ws: WebSocket) {
         this.serverContext = serverContext;
@@ -33,7 +33,7 @@ export class ConnectionContext {
      * @param login user login
      */
     public authenticateUser(login: string) {
-        this.currentUserLogin = null;
+        this.currentUserLogin = login;
         this.authenticated;
         //add users to the server context
         this.serverContext.connectUser(login, this.ws);
