@@ -7,8 +7,13 @@ export class NewMessageHandler implements MessageHandler {
     handleMessage(serverContext: ServerContext, connectionContext: ConnectionContext, parsedMessage: any): void {
         const newMessage: NewMessage = parsedMessage;
         console.log(`new message: ${newMessage}`);
-        serverContext.sendJsonToUser(newMessage.address, newMessage.content);
-        //TODO
+        const messageToSend: NewMessage = {
+            salt: "",
+            content: newMessage.content,
+            subject: "new-message",
+            fromWhom: newMessage.toWhom
+        };
+        serverContext.sendJsonToUser(newMessage.toWhom, messageToSend);
     }
 }
 
@@ -33,5 +38,9 @@ export interface NewMessage extends Subject {
     /**
      * User id that the message is addressed to. Empty means a messsage addressed to everyone.
      */
-    address?: string;
+    toWhom?: string;
+    /**
+     * User id that the message is from. Empty means a messsage addressed to everyone.
+     */
+    fromWhom?: string;
 }

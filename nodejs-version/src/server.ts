@@ -47,6 +47,8 @@ wsServer.on("connection", function (ws: WebSocket) {
     });
 
     ws.on("close", () => {
+        // tell your wrapper that you are dead
+        connectionContext.close(); 
         console.log("Client disconnected");
     });
 });

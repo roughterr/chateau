@@ -21,7 +21,7 @@ export class ServerContext {
         return this.userService;
     }
 
-    public connectUser(login: string, ws: WebSocket): void {
+    public checkInUserConnection(login: string, ws: WebSocket): void {
         const websockets: WebSocket[] = this.connectedUsers.get(login);
         if (websockets) {
             websockets.push(ws);
@@ -34,6 +34,18 @@ export class ServerContext {
                 `There is a connected user with login: ${login} and number of open sessions: ${sessions.length}`
             );
         }
+    }
+
+    /**
+     * Theoretically this method could work without "login", but with "login" it will work faster.
+     * @param login
+     * @param ws 
+     */
+    public checkOutUserConnection(login: string, ws: WebSocket): void {
+        console.log(`checkOutUserConnection. login=${login}, ws=${ws}`);
+        
+        //this.connectedUsers.get[login].remo
+        //TODO
     }
 
     /**

@@ -21,7 +21,7 @@ ws.on("message", (message: string) => {
             salt: Date.now().toString(),
             content: "hi dan",
             subject: "new-message",
-            address: "dan"
+            toWhom: "dan"
         };
         ws.send(JSON.stringify(message));
     }

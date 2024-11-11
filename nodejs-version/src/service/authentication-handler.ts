@@ -2,7 +2,6 @@ import { ConnectionContext } from "../contexts/connection-context";
 import { ServerContext } from "../contexts/server-context";
 import { MessageHandler } from "./message-handler";
 import { Subject } from "./subject";
-import { WebSocket } from "ws";
 
 export class AuthenticationHandler implements MessageHandler {
     handleMessage(serverContext: ServerContext, connectionContext: ConnectionContext, parsedMessage: any): void {
@@ -16,7 +15,8 @@ export class AuthenticationHandler implements MessageHandler {
             connectionContext.sendStringToUser("authentication successful");
         } else {
             connectionContext.sendStringToUser("provide correct login and password for authentication");
-            connectionContext.closeConnection();
+            // let's later implement an automatical disconnect if the user hasn't logged in in a specific amount of time
+            //connectionContext.closeConnection();
         }
     }
 }

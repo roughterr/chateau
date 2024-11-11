@@ -36,21 +36,30 @@ export class ConnectionContext {
         this.currentUserLogin = login;
         this.authenticated;
         //add users to the server context
-        this.serverContext.connectUser(login, this.ws);
+        this.serverContext.checkInUserConnection(login, this.ws);
     }
 
-    closeConnection() {
-        this.authenticated = false;
-        this.currentUserLogin = null;
+    /**
+     * Close connection only if the user is messing around.
+     */
+    public closeConnection() {
         this.ws.close();
-        //maybe later we will implement removing it from a pool of connections
     }
 
-    sendJsonToUser(json: any) {
+    public sendJsonToUser(json: any) {
         this.sendStringToUser(JSON.stringify(json));
     }
 
-    sendStringToUser(message: string) {
+    public sendStringToUser(message: string) {
         this.ws.send(message);
+    }
+
+    /**
+     * This method must be called after the connection was closed.
+     */
+    public close(): void {
+        this.serverContext.checkOutUserConnection(this.currentUserLogin, this.ws);
+        this.authenticated = false;
+        this.currentUserLogin = null;
     }
 }
