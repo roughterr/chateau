@@ -23,12 +23,14 @@ export class ServerContext {
 
     public connectUser(login: string, ws: WebSocket): void {
         const websockets: WebSocket[] = this.connectedUsers.get(login);
-        console.log(`login={login}, ws=${ws}, websockets={websockets}`);
         if (websockets) {
             websockets.push(ws);
         } else {
             this.connectedUsers.set(login, [ws]);
         }
-        console.log(`this.connectedUsers=${this.connectedUsers}`);
+        // JSON.stringify won't work on a Map
+        for (let [login, sessions] of this.connectedUsers) {
+            console.log(`There is a connected user with login: ${login} and number of open sessions: ${sessions.length}`);
+        }
     }
 }
