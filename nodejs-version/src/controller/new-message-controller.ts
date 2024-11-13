@@ -7,6 +7,10 @@ import { Subject } from "../dto/subject";
 export const newMessageSubject: string = "new-message";
 
 export class NewMessageController implements AbstractController {
+    subject(): string {
+        return newMessageSubject;
+    }
+
     handleMessage(serverContext: ServerContext, connectionContext: ConnectionContext, parsedMessage: any): void {
         const newMessage: NewMessage = parsedMessage;
         const messageToSend: messageFromServerToClient & Subject = {

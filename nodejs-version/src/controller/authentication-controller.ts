@@ -6,6 +6,10 @@ import { Subject } from "../dto/subject";
 export const authenicateSubject: string = "authenicate";
 
 export class AuthenticationController implements AbstractController {
+    subject(): string {
+        return authenicateSubject;
+    }
+
     handleMessage(serverContext: ServerContext, connectionContext: ConnectionContext, parsedMessage: any): void {
         const aData: AuthenticationData = parsedMessage;
         if (
