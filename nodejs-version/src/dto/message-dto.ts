@@ -1,6 +1,4 @@
-import { Subject } from "./subject";
-
-export interface messageFromServerToClient extends NewMessage {
+export interface MessageFromServerToClient extends NewMessage {
     /**
      * User id that the message is from. Empty means a message addressed to everyone.
      */

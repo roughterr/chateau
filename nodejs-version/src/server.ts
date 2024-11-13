@@ -25,12 +25,12 @@ const httpServer = app.listen(port, () => {
     // tslint:disable-next-line:no-console
     console.log(`server started at http://localhost:${port}`);
 });
-
 const wsServer = new WebSocket.Server({ noServer: true });
+
 const serverContext = new ServerContext(wsServer);
 
 wsServer.on("connection", function (ws: WebSocket) {
-    console.log("New client connected");
+    console.log("New ws connection");
     const connectionContext = new ConnectionContext(serverContext, ws);
     // listening to new messages
     ws.on("message", (messageStr: string) => {
