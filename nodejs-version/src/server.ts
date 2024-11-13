@@ -3,10 +3,8 @@ import express, { Express } from "express";
 import { WebSocket } from "ws";
 import { ConnectionContext } from "./contexts/connection-context";
 import { ServerContext } from "./contexts/server-context";
-import { AuthenticationHandler } from "./service/authentication-handler";
-import { NewMessageHandler } from "./service/new-message-handler";
-import { MessageHandler } from "./service/message-handler";
-import { Subject } from "./service/subject";
+import { controllerMap } from "./controller/abstract-controller";
+import { Subject } from "./dto/subject";
 
 const port = 8080;
 const app: Express = express();
@@ -31,19 +29,14 @@ const httpServer = app.listen(port, () => {
 const wsServer = new WebSocket.Server({ noServer: true });
 const serverContext = new ServerContext(wsServer);
 
-export const subjectHandlerMap = new Map<string, MessageHandler>([
-    ["authenicate", new AuthenticationHandler()],
-    ["new-message", new NewMessageHandler()],
-]);
-
 wsServer.on("connection", function (ws: WebSocket) {
     console.log("New client connected");
     const connectionContext = new ConnectionContext(serverContext, ws);
     // listening to new messages
     ws.on("message", (messageStr: string) => {
-        console.log(`the raw message string is "${messageStr}"`);
+        console.log(`received message for a client: "${messageStr}"`);
         const parsedMessage: Subject = JSON.parse(messageStr);
-        subjectHandlerMap.get(parsedMessage.subject)!.handleMessage(serverContext, connectionContext, parsedMessage);
+        controllerMap.get(parsedMessage.subject)!.handleMessage(serverContext, connectionContext, parsedMessage);
     });
 
     ws.on("close", () => {

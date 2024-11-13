@@ -1,9 +1,11 @@
 import { ConnectionContext } from "../contexts/connection-context";
 import { ServerContext } from "../contexts/server-context";
-import { MessageHandler } from "./message-handler";
-import { Subject } from "./subject";
+import { AbstractController } from "./abstract-controller";
+import { Subject } from "../dto/subject";
 
-export class AuthenticationHandler implements MessageHandler {
+export const authenicateSubject: string = "authenicate";
+
+export class AuthenticationController implements AbstractController {
     handleMessage(serverContext: ServerContext, connectionContext: ConnectionContext, parsedMessage: any): void {
         const aData: AuthenticationData = parsedMessage;
         if (

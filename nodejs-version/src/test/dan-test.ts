@@ -1,6 +1,8 @@
 import * as WebSocket from "ws";
-import { AuthenticationData } from "../service/authentication-handler";
-import { NewMessage } from "../service/new-message-handler";
+import { AuthenticationData } from "../controller/authentication-controller";
+import { NewMessage } from "../dto/message-dto";
+import { Subject } from "../dto/subject";
+
 const ws = new WebSocket.WebSocket("ws://localhost:8080");
 
 ws.on("open", () => {
@@ -17,7 +19,7 @@ ws.on("open", () => {
 ws.on("message", (message: string) => {
     console.log(`Received message from server: ${message}`);
     if (message == "authentication successful") {
-        const message: NewMessage = {
+        const message: NewMessage & Subject = {
             salt: Date.now().toString(),
             content: "hi ian. how are you?",
             subject: "new-message",
