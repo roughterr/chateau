@@ -1,4 +1,5 @@
 mod user_service;
+mod connection_context;
 
 use tokio::net::{TcpListener, TcpStream};
 use tokio_tungstenite::{accept_async, tungstenite::protocol::Message};
@@ -45,22 +46,24 @@ struct LoginCredentials {
 }
 
 trait Controller: Sync + Send {
-    fn handle(&self, message: &str) -> ();
+    fn handle(&self, message: &str, connection_context: &mut connection_context::ConnectionContext) -> ();
 }
 
 struct AuthenticationController;
 impl Controller for AuthenticationController {
-    fn handle(&self, message: &str) -> () {
+    fn handle(&self, message: &str, connection_context: &mut connection_context::ConnectionContext) -> () {
         let loginCredentials: LoginCredentials = serde_json::from_str(&message).expect("JSON was not well-formatted");
         let is_password_correct = user_service::are_credentials_correct(&loginCredentials.login, &loginCredentials.password);
         println!("is_password_correct = {}", is_password_correct);
-        println!("AuthenticationController!");
+        if is_password_correct {
+            connection_context.authenticate(loginCredentials.login);
+        }
     }
 }
 
 struct NewMessageController;
 impl Controller for NewMessageController {
-    fn handle(&self, message: &str) -> () {
+    fn handle(&self, message: &str, connection_context: &mut connection_context::ConnectionContext) -> () {
         println!("NewMessageController!");
     }
 }
@@ -86,6 +89,8 @@ async fn handle_connection(stream: TcpStream) {
     // Split the WebSocket stream into a sender and receiver
     let (mut sender, mut receiver) = ws_stream.split();
 
+    let mut connection_context = connection_context::ConnectionContext::new();
+
     // Handle incoming messages
     while let Some(msg) = receiver.next().await {
         match msg {
@@ -93,7 +98,8 @@ async fn handle_connection(stream: TcpStream) {
                 let subject: Subject = serde_json::from_str(&text).expect("JSON was not well-formatted");
                 println!("subject: {:#?}", subject);
                 if let Some(handler) = SUBJECT_TO_HANDLER.get(&*subject.subject) {
-                    handler.handle(&text);
+                    handler.handle(&text, &mut connection_context);
+                    println!("A message has been handled. connection_context.current_user_login={} :", connection_context.get_current_user_login())
                 } else {
                     sender.send(Message::Text("unknown subject".to_owned())).await.expect("TODO: panic message");
                     //Close the WebSocket connection gracefully
@@ -116,4 +122,3 @@ async fn handle_connection(stream: TcpStream) {
         }
     }
 }
-
