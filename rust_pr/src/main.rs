@@ -1,7 +1,9 @@
-mod connection_context;
+mod contexts;
 mod user_service;
+mod authentication_controller;
 
-use crate::connection_context::ConnectionContext;
+use crate::authentication_controller::AuthenticationController;
+use crate::contexts::{ConnectionContext, MessageContext, Subject};
 use futures::stream::SplitSink;
 use futures::{SinkExt, StreamExt};
 use log::{error, info};
@@ -39,76 +41,20 @@ async fn main() {
     }
 }
 
-#[derive(Debug, Deserialize)]
-struct Subject {
-    subject: String,
-}
 
-#[derive(Debug, Deserialize)]
-struct LoginCredentials {
-    login: String,
-    password: String,
-}
 
 trait Controller {
     fn handle(
         &self,
-        message: &str,
-        connection_context: &mut connection_context::ConnectionContext,
-    ) -> MessageResponse;
-}
-
-/**
-* Represents a structure for a message response.
-*/
-struct MessageResponse {
-    /**
-     * Content of the response message.
-    */
-    content: String,
-    /**
-     * Sometimes we don't want to react.
-     */
-    no_response: bool
-}
-
-struct AuthenticationController;
-impl Controller for AuthenticationController {
-    fn handle(
-        &self,
-        message: &str,
-        connection_context: &mut connection_context::ConnectionContext,
-    ) -> MessageResponse {
-        let login_credentials: LoginCredentials =
-            serde_json::from_str(&message).expect("JSON was not well-formatted");
-        let is_password_correct = user_service::are_credentials_correct(
-            &login_credentials.login,
-            &login_credentials.password,
-        );
-        println!("is_password_correct = {}", is_password_correct);
-        if is_password_correct {
-            connection_context.authenticate(login_credentials.login);
-            MessageResponse {
-                content: "authentication successful".to_string(),
-                no_response: false,
-            }
-        } else {
-            MessageResponse {
-                content: "provide correct login and password for authentication".to_string(),
-                no_response: false,
-            }
-        }
-    }
+        connection_context: &mut ConnectionContext,
+        message_context: MessageContext
+    ) -> ();
 }
 
 struct NewMessageController;
 impl Controller for NewMessageController {
-    fn handle(&self, message: &str, connection_context: &mut ConnectionContext) -> MessageResponse {
-        println!("NewMessageController!");
-        MessageResponse {
-            content: "not implemented yet".to_string(),
-            no_response: false,
-        }
+    fn handle(&self, connection_context: &mut ConnectionContext, message_context: MessageContext) -> () {
+        println!("NewMessageController is not implemented yet");
     }
 }
 
@@ -133,23 +79,31 @@ async fn handle_connection(stream: TcpStream) {
     // Split the WebSocket stream into a sender and receiver
     let (mut sender, mut receiver) = ws_stream.split();
 
-    let mut connection_context = connection_context::ConnectionContext::new();
+    let mut connection_context = contexts::ConnectionContext::new();
 
     // Handle incoming messages
     while let Some(msg) = receiver.next().await {
         match msg {
-            Ok(Message::Text(text)) => {
-                let subject: Subject = serde_json::from_str(&text).expect("JSON was not well-formatted");
+            Ok(Message::Text(content)) => {
+                let subject: Subject = serde_json::from_str(&content).expect("JSON was not well-formatted");
                 println!("subject: {:#?}", subject);
                 if let Some(handler) = SUBJECT_TO_HANDLER.get(&*subject.subject) {
-                    let response = handler.handle(&text, &mut connection_context);
-                    if (!response.no_response) {
-                        sender.send(Message::Text(response.content)).await.expect("TODO: panic message");
+                    let message_context = MessageContext {
+                        content,
+                        subject
+                    };
+                    handler.handle(&mut connection_context, message_context);
+                    while let Some(msg) = connection_context.get_messages_queue().pop_front() {
+                        println!("The message is: {}", msg);
+                        sender
+                            .send(Message::Text(msg))
+                            .await
+                            .expect("TODO: panic message");
                     }
                     println!("A message has been handled. connection_context.current_user_login={} :", connection_context.get_current_user_login())
                 } else {
                     sender.send(Message::Text("unknown subject".to_owned())).await.expect("TODO: panic message");
-                    //Close the WebSocket connection gracefully
+                    // Close the WebSocket connection gracefully
                     sender.send(Message::Close(None)).await.expect("TODO: panic message");
                     println!("Close frame sent");
                     // sender.shutdown().await.unwrap();
