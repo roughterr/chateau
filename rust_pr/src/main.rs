@@ -1,17 +1,21 @@
-mod user_service;
 mod connection_context;
+mod user_service;
 
-use tokio::net::{TcpListener, TcpStream};
-use tokio_tungstenite::{accept_async, tungstenite::protocol::Message};
-use futures::{StreamExt, SinkExt};
-use std::env;
-use std::net::SocketAddr;
-use log::{info, error};
-use serde::Deserialize;
-use tokio::io::AsyncWriteExt;
-use std::net::{Shutdown};
-use std::collections::HashMap;
+use crate::connection_context::ConnectionContext;
+use futures::stream::SplitSink;
+use futures::{SinkExt, StreamExt};
+use log::{error, info};
 use once_cell::sync::Lazy;
+use serde::Deserialize;
+use std::collections::HashMap;
+use std::env;
+use std::net::Shutdown;
+use std::net::SocketAddr;
+use std::sync::Arc;
+use tokio::io::AsyncWriteExt;
+use tokio::net::{TcpListener, TcpStream};
+use tokio::sync::Mutex;
+use tokio_tungstenite::{accept_async, tungstenite::protocol::Message, WebSocketStream};
 
 #[tokio::main]
 async fn main() {
@@ -19,7 +23,9 @@ async fn main() {
     env_logger::init();
 
     // Get the address to bind to
-    let addr = env::args().nth(1).unwrap_or_else(|| "127.0.0.1:8080".to_string());
+    let addr = env::args()
+        .nth(1)
+        .unwrap_or_else(|| "127.0.0.1:8080".to_string());
     let addr: SocketAddr = addr.parse().expect("Invalid address");
 
     // Create the TCP listener
@@ -34,7 +40,6 @@ async fn main() {
 }
 
 #[derive(Debug, Deserialize)]
-// #[serde(rename_all = "PascalCase")]
 struct Subject {
     subject: String,
 }
@@ -45,26 +50,65 @@ struct LoginCredentials {
     password: String,
 }
 
-trait Controller: Sync + Send {
-    fn handle(&self, message: &str, connection_context: &mut connection_context::ConnectionContext) -> ();
+trait Controller {
+    fn handle(
+        &self,
+        message: &str,
+        connection_context: &mut connection_context::ConnectionContext,
+    ) -> MessageResponse;
+}
+
+/**
+* Represents a structure for a message response.
+*/
+struct MessageResponse {
+    /**
+     * Content of the response message.
+    */
+    content: String,
+    /**
+     * Sometimes we don't want to react.
+     */
+    no_response: bool
 }
 
 struct AuthenticationController;
 impl Controller for AuthenticationController {
-    fn handle(&self, message: &str, connection_context: &mut connection_context::ConnectionContext) -> () {
-        let loginCredentials: LoginCredentials = serde_json::from_str(&message).expect("JSON was not well-formatted");
-        let is_password_correct = user_service::are_credentials_correct(&loginCredentials.login, &loginCredentials.password);
+    fn handle(
+        &self,
+        message: &str,
+        connection_context: &mut connection_context::ConnectionContext,
+    ) -> MessageResponse {
+        let login_credentials: LoginCredentials =
+            serde_json::from_str(&message).expect("JSON was not well-formatted");
+        let is_password_correct = user_service::are_credentials_correct(
+            &login_credentials.login,
+            &login_credentials.password,
+        );
         println!("is_password_correct = {}", is_password_correct);
         if is_password_correct {
-            connection_context.authenticate(loginCredentials.login);
+            connection_context.authenticate(login_credentials.login);
+            MessageResponse {
+                content: "authentication successful".to_string(),
+                no_response: false,
+            }
+        } else {
+            MessageResponse {
+                content: "provide correct login and password for authentication".to_string(),
+                no_response: false,
+            }
         }
     }
 }
 
 struct NewMessageController;
 impl Controller for NewMessageController {
-    fn handle(&self, message: &str, connection_context: &mut connection_context::ConnectionContext) -> () {
+    fn handle(&self, message: &str, connection_context: &mut ConnectionContext) -> MessageResponse {
         println!("NewMessageController!");
+        MessageResponse {
+            content: "not implemented yet".to_string(),
+            no_response: false,
+        }
     }
 }
 
@@ -98,7 +142,10 @@ async fn handle_connection(stream: TcpStream) {
                 let subject: Subject = serde_json::from_str(&text).expect("JSON was not well-formatted");
                 println!("subject: {:#?}", subject);
                 if let Some(handler) = SUBJECT_TO_HANDLER.get(&*subject.subject) {
-                    handler.handle(&text, &mut connection_context);
+                    let response = handler.handle(&text, &mut connection_context);
+                    if (!response.no_response) {
+                        sender.send(Message::Text(response.content)).await.expect("TODO: panic message");
+                    }
                     println!("A message has been handled. connection_context.current_user_login={} :", connection_context.get_current_user_login())
                 } else {
                     sender.send(Message::Text("unknown subject".to_owned())).await.expect("TODO: panic message");
